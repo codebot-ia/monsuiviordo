@@ -1,6 +1,15 @@
 /* MonSuiviOrdo — service worker : application disponible hors ligne. */
-const VERSION = "monsuiviordo-v1.8.1";
 const RACINE = new URL("./", self.location).pathname;
+
+// La préprod (sous-dossier GitHub Pages) partage l'origine avec la prod : les
+// caches doivent donc être préfixés par le périmètre, sinon les deux versions
+// se marcheraient dessus.
+const PERIMETRE = RACINE.replace(/^\/+/, "").replace(/\/+$/, "").replace(/\//g, "-");
+const BASE_CACHE = "monsuiviordo-v1.9.1";
+// Préfixe des caches de CE périmètre : la prod (« monsuiviordo-v… ») ne touche
+// jamais aux caches de la préprod (« monsuiviordo-preprod@monsuiviordo-v… »).
+const PREFIXE_CACHE = PERIMETRE ? `${PERIMETRE}@monsuiviordo-v` : "monsuiviordo-v";
+const VERSION = PERIMETRE ? `${PERIMETRE}@${BASE_CACHE}` : BASE_CACHE;
 
 const FICHIERS_APPLICATION = [
   "./",
@@ -29,7 +38,11 @@ self.addEventListener("activate", (evenement) => {
   evenement.waitUntil(
     caches
       .keys()
-      .then((noms) => Promise.all(noms.filter((nom) => nom !== VERSION).map((nom) => caches.delete(nom))))
+      .then((noms) => Promise.all(
+        noms
+          .filter((nom) => nom.startsWith(PREFIXE_CACHE) && nom !== VERSION)
+          .map((nom) => caches.delete(nom))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -43,6 +56,10 @@ self.addEventListener("fetch", (evenement) => {
 
   // Navigation : réseau d'abord, cache en secours (fonctionne hors ligne).
   if (requete.mode === "navigate") {
+    // Seule la page racine de ce périmètre nous concerne : un sous-dossier
+    // (préprod) est une autre application, avec son propre service worker.
+    const pageRacine = url.pathname === RACINE || url.pathname === `${RACINE}index.html`;
+    if (!pageRacine) return;
     evenement.respondWith(
       fetch(requete)
         .then((reponse) => {
@@ -54,6 +71,10 @@ self.addEventListener("fetch", (evenement) => {
     );
     return;
   }
+
+  // Ressources d'un sous-dossier (préprod) : gérées par le service worker de
+  // ce sous-dossier, jamais mises en cache par celui de la prod.
+  if (url.pathname.startsWith(`${RACINE}preprod/`)) return;
 
   if (!memeOrigine) {
     // Ressources externes (moteur OCR) : cache après le premier téléchargement.

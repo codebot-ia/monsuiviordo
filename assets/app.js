@@ -201,7 +201,10 @@ function construireCarte(maladie, aujourdHui) {
           </span>
           ${nombre ? `<span class="carte__compte" aria-hidden="true">${nombre}</span>` : ""}
           <span class="carte__poignee" aria-hidden="true"></span>
-          <span class="carte__chevron" aria-hidden="true"></span>
+          <svg class="carte__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M3 5.5 8 10.5l5-5" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
       </h2>
     </header>

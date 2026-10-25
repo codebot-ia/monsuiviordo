@@ -211,17 +211,17 @@ ul { padding: 0; list-style: none; }
 body.glisser-en-cours { cursor: grabbing; }
 body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
+/* Chevron de pliage : SVG aux dimensions exactes, centré par le flex parent. */
 .carte__chevron {
   flex: none;
-  width: .6rem;
-  height: .6rem;
+  display: block;
+  width: 1rem;
+  height: 1rem;
   margin-right: .25rem;
-  border-right: 2px solid var(--texte-doux);
-  border-bottom: 2px solid var(--texte-doux);
-  transform: rotate(45deg);
+  color: var(--texte-doux);
   transition: transform .18s ease;
 }
-.carte--ouverte .carte__chevron { transform: rotate(-135deg); }
+.carte--ouverte .carte__chevron { transform: rotate(180deg); }
 .carte--ouverte .carte__compte { display: none; }
 
 .carte__corps { margin-top: .9rem; }
@@ -617,6 +617,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .carte__bascule { padding: 0; }
   .carte__entete-texte { display: flex; align-items: baseline; justify-content: space-between; gap: 10pt; }
   .carte__chevron,
+  .carte__poignee,
   .carte__compte { display: none !important; }
 
   /* Sur papier : ni état, ni jours restants — seulement la durée et la date de fin. */
