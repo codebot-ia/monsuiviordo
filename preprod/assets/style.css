@@ -149,6 +149,13 @@ icone-tabler { display: contents; }
   height: var(--taille-icone, 1.15em);
   flex: none;
   vertical-align: -.16em;
+  /* Tabler dessine au trait : ces propriétés vivaient sur le <svg> source, que
+     le générateur ne recopie pas (il ne garde que les tracés). */
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   /* Le clic vise le bouton, jamais le dessin de l'icône. */
   pointer-events: none;
 }
