@@ -47,7 +47,7 @@ export async function demanderCadrage(fichier, { reprise = false } = {}) {
       const style = parent ? getComputedStyle(parent) : null;
       const marge = style ? parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) : 0;
       const largeurDispo = Math.max(160, (parent ? parent.clientWidth : 320) - marge);
-      const hauteurDispo = Math.max(200, Math.round(window.innerHeight * 0.5));
+      const hauteurDispo = Math.max(220, Math.round(window.innerHeight * 0.54));
       const echelle = Math.min(largeurDispo / bitmap.width, hauteurDispo / bitmap.height);
       taille = {
         largeur: Math.max(80, Math.round(bitmap.width * echelle)),
