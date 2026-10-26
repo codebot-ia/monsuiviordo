@@ -522,23 +522,67 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 .cadrage__zone {
   position: absolute;
   border: 2px solid rgba(255, 255, 255, .95);
-  box-shadow: 0 0 0 100vmax rgba(9, 20, 28, .55);
+  border-radius: 4px;
+  box-shadow: 0 0 0 100vmax rgba(9, 20, 28, .58), inset 0 0 0 1px rgba(9, 20, 28, .45);
   cursor: move;
   touch-action: none;
 }
+/* Cibles tactiles de 48 px (recommandation tactile) posées dans les coins :
+   le repère visible reste fin, mais le doigt a de la place pour attraper. */
 .cadrage__coin {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--accent);
-  box-shadow: 0 1px 4px rgba(9, 20, 28, .5);
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  touch-action: none;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.cadrage__coin[data-coin="no"] { left: 3px; top: 3px; }
-.cadrage__coin[data-coin="ne"] { right: 3px; top: 3px; }
-.cadrage__coin[data-coin="so"] { left: 3px; bottom: 3px; }
-.cadrage__coin[data-coin="se"] { right: 3px; bottom: 3px; }
+.cadrage__coin::before {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--accent);
+  /* halo clair + ombre : le repère se voit sur le papier blanc comme sur le fond sombre */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 1px 5px rgba(9, 20, 28, .45);
+  border-radius: 8px;
+}
+.cadrage__coin::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+/* Chaque coin dessine une équerre tournée vers l'intérieur de la zone. */
+.cadrage__coin[data-coin="no"] { left: 0; top: 0; cursor: nwse-resize; }
+.cadrage__coin[data-coin="no"]::before { left: -2px; top: -2px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.cadrage__coin[data-coin="no"]::after { left: 6px; top: 6px; }
+.cadrage__coin[data-coin="ne"] { right: 0; top: 0; cursor: nesw-resize; }
+.cadrage__coin[data-coin="ne"]::before { right: -2px; top: -2px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.cadrage__coin[data-coin="ne"]::after { right: 6px; top: 6px; }
+.cadrage__coin[data-coin="so"] { left: 0; bottom: 0; cursor: nesw-resize; }
+.cadrage__coin[data-coin="so"]::before { left: -2px; bottom: -2px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.cadrage__coin[data-coin="so"]::after { left: 6px; bottom: 6px; }
+.cadrage__coin[data-coin="se"] { right: 0; bottom: 0; cursor: nwse-resize; }
+.cadrage__coin[data-coin="se"]::before { right: -2px; bottom: -2px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+.cadrage__coin[data-coin="se"]::after { right: 6px; bottom: 6px; }
+
+/* Taille de la découpe, en pixels : montre le gain obtenu en cadrant serré. */
+.cadrage__mesure {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: .18rem .45rem;
+  border-radius: 999px;
+  background: rgba(9, 20, 28, .62);
+  color: #fff;
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
 
 /* Quatre boutons ne tiennent pas sur une ligne de téléphone. */
 .dialogue__actions--multi { flex-wrap: wrap; }

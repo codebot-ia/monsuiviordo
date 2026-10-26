@@ -218,6 +218,31 @@ export function deplacerZone(zone, prise, dx, dy, minimum = 0.06) {
   return bornerZone({ x: gauche, y: haut, largeur: droite - gauche, hauteur: bas - haut }, minimum);
 }
 
+/**
+ * Quelle prise le doigt a-t-il attrapée ? Les quatre coins d'abord (à moins de
+ * « accroche » pixels d'un sommet), puis le corps de la zone, sinon rien.
+ * @param {number} x position horizontale du doigt, en pixels écran
+ * @param {number} y position verticale du doigt, en pixels écran
+ * @param {{left:number, top:number, right:number, bottom:number}} cadre boîte écran de la zone
+ * @returns {"no"|"ne"|"so"|"se"|"centre"|null}
+ */
+export function priseAttrapee(x, y, cadre, accroche = 28) {
+  if (!cadre || !cadre.width || !cadre.height) return null;
+  // Sur une zone très petite, réduire l'accroche pour laisser un milieu saisissable.
+  const seuil = Math.min(accroche, Math.max(10, Math.min(cadre.width, cadre.height) / 3));
+  const coins = [
+    ["no", cadre.left, cadre.top],
+    ["ne", cadre.right, cadre.top],
+    ["so", cadre.left, cadre.bottom],
+    ["se", cadre.right, cadre.bottom]
+  ];
+  for (const [nom, coinX, coinY] of coins) {
+    if (Math.abs(x - coinX) <= seuil && Math.abs(y - coinY) <= seuil) return nom;
+  }
+  const dedans = x >= cadre.left && x <= cadre.right && y >= cadre.top && y <= cadre.bottom;
+  return dedans ? "centre" : null;
+}
+
 /** Convertit une zone en fractions vers un rectangle de pixels (entiers, dans l'image). */
 export function zoneVersPixels(zone, width, height) {
   const z = bornerZone(zone);

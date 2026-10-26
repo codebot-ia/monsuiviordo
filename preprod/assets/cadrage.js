@@ -4,10 +4,13 @@
  * beaucoup plus de pixels par lettre, donc un OCR nettement plus stable.
  * Aucune dépendance : canvas pour l'aperçu et la découpe, pointeur pour les coins.
  */
-import { bornerZone, deplacerZone, zoneVersPixels } from "./traitement-image.js";
+import { bornerZone, deplacerZone, priseAttrapee, zoneVersPixels } from "./traitement-image.js";
 
-// Taille minimale d'une zone, en fraction de l'image.
-const MARGE_MINIMUM = 0.06;
+// Taille minimale d'une zone, en fraction de l'image : en dessous, les quatre
+// prises de coin se marcheraient dessus et le doigt ne saurait plus quoi faire.
+const MARGE_MINIMUM = 0.12;
+// Rayon d'accroche des coins, en pixels d'écran (le doigt est large).
+const ACCROCHE = 28;
 // Zone proposée à l'ouverture : presque toute l'image, coins attrapables.
 const ZONE_DEPART = { x: 0.06, y: 0.06, largeur: 0.88, hauteur: 0.88 };
 
@@ -20,6 +23,7 @@ export async function demanderCadrage(fichier, { reprise = false } = {}) {
   const vue = document.getElementById("vue-cadrage");
   const canevas = document.getElementById("canevas-cadrage");
   const zoneEl = document.getElementById("zone-cadrage");
+  const mesure = document.getElementById("mesure-cadrage");
   const boutonEntier = document.getElementById("bouton-cadrage-entier");
   const boutonReprendre = document.getElementById("bouton-reprendre");
   const boutonLire = document.getElementById("bouton-analyser");
@@ -63,14 +67,20 @@ export async function demanderCadrage(fichier, { reprise = false } = {}) {
       zoneEl.style.top = `${zone.y * 100}%`;
       zoneEl.style.width = `${zone.largeur * 100}%`;
       zoneEl.style.height = `${zone.hauteur * 100}%`;
+      if (mesure) {
+        const pixels = zoneVersPixels(zone, bitmap.width, bitmap.height);
+        mesure.textContent = `${pixels.largeur} × ${pixels.hauteur} px`;
+      }
     };
 
+    // On mesure la distance aux sommets plutôt que de compter sur la boîte des
+    // repères visuels : le doigt vise un sommet, pas un rectangle de 48 px.
     const surAppui = (evenement) => {
-      const coin = evenement.target.closest("[data-coin]");
-      if (!coin && !evenement.target.closest("#zone-cadrage")) return;
       if (!taille.largeur || !taille.hauteur) return;
+      const prise = priseAttrapee(evenement.clientX, evenement.clientY, zoneEl.getBoundingClientRect(), ACCROCHE);
+      if (!prise) return;
       glissement = {
-        prise: coin ? coin.dataset.coin : "centre",
+        prise,
         departX: evenement.clientX,
         departY: evenement.clientY,
         zone: { ...zone }
@@ -101,7 +111,7 @@ export async function demanderCadrage(fichier, { reprise = false } = {}) {
       if (termine) return;
       termine = true;
       dialogue.removeEventListener("close", surFermeture);
-      zoneEl.removeEventListener("pointerdown", surAppui);
+      vue.removeEventListener("pointerdown", surAppui);
       window.removeEventListener("pointermove", surBouge);
       window.removeEventListener("pointerup", surRelache);
       window.removeEventListener("pointercancel", surRelache);
@@ -141,7 +151,7 @@ export async function demanderCadrage(fichier, { reprise = false } = {}) {
 
     if (boutonReprendre) boutonReprendre.hidden = !reprise;
     dialogue.addEventListener("close", surFermeture);
-    zoneEl.addEventListener("pointerdown", surAppui);
+    vue.addEventListener("pointerdown", surAppui);
     window.addEventListener("pointermove", surBouge);
     window.addEventListener("pointerup", surRelache);
     window.addEventListener("pointercancel", surRelache);
