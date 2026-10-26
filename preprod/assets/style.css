@@ -199,11 +199,13 @@ icone-tabler { display: contents; }
   font-weight: 680;
   letter-spacing: -.015em;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .carte__sous-titre {
   font-size: .82rem;
   color: var(--texte-doux);
+  overflow-wrap: anywhere;
 }
 .carte__sous-titre strong { color: var(--accent); font-weight: 620; }
 
@@ -251,7 +253,6 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   transition: transform .18s ease;
 }
 .carte--ouverte .carte__chevron { transform: rotate(180deg); }
-.carte--ouverte .carte__compte { display: none; }
 
 .carte__corps { margin-top: .9rem; }
 .carte--repliee .carte__corps { display: none; }
@@ -341,6 +342,11 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 .bouton:hover { border-color: var(--bord); }
 .bouton:active { transform: translateY(1px); }
 .bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Un libellé de bouton ne passe jamais sur deux lignes : c'est la rangée de
+   boutons qui se replie (les icônes restent alignées sur une seule ligne). */
+.bouton__libelle { white-space: nowrap; }
+.bouton .icone { align-self: center; }
 
 .bouton--principal {
   background: linear-gradient(180deg, var(--accent-clair), var(--accent));
@@ -492,7 +498,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
 .champ-duo { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
 
-.dialogue__actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .3rem; }
+.dialogue__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; margin-top: .3rem; }
 
 .scan {
   display: grid;
