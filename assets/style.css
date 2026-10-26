@@ -128,6 +128,38 @@ ul { padding: 0; list-style: none; }
 
 .liste { display: grid; gap: 1rem; }
 
+/* ---------- Composants d'interface (web components) ---------- */
+
+/*
+ * Les hôtes ne créent aucune boîte : l'élément rendu (bouton, pastille, champ,
+ * icône) participe directement à la mise en page du parent (flex, grid), ce qui
+ * préserve les règles existantes. « hidden » reste prioritaire.
+ */
+bouton-action,
+pastille-statut,
+champ-formulaire,
+icone-tabler { display: contents; }
+[hidden] { display: none !important; }
+
+.sprite-icones { display: none; }
+
+/* Icône Tabler : taille réglable par l'attribut « taille » du composant. */
+.icone {
+  width: var(--taille-icone, 1.15em);
+  height: var(--taille-icone, 1.15em);
+  flex: none;
+  vertical-align: -.16em;
+  /* Tabler dessine au trait : ces propriétés vivaient sur le <svg> source, que
+     le générateur ne recopie pas (il ne garde que les tracés). */
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Le clic vise le bouton, jamais le dessin de l'icône. */
+  pointer-events: none;
+}
+
 /* ---------- Carte maladie ---------- */
 
 .carte {
@@ -167,11 +199,13 @@ ul { padding: 0; list-style: none; }
   font-weight: 680;
   letter-spacing: -.015em;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .carte__sous-titre {
   font-size: .82rem;
   color: var(--texte-doux);
+  overflow-wrap: anywhere;
 }
 .carte__sous-titre strong { color: var(--accent); font-weight: 620; }
 
@@ -187,18 +221,17 @@ ul { padding: 0; list-style: none; }
   text-align: center;
 }
 
-/* Poignée de glisser (indice visuel) */
-.carte__poignee {
+/* Poignée de glisser : icône discrète, sans fond (elle s'imprime mal).
+   Les règles visent le <svg> rendu par le composant, pas son hôte : l'hôte est
+   en display: contents et ne porte aucune boîte à dimensionner. */
+svg.carte__poignee {
   flex: none;
-  width: 1rem;
-  height: .9rem;
-  opacity: .26;
-  background-image: radial-gradient(circle, currentColor 1.1px, transparent 1.3px);
-  background-size: .34rem .3rem;
+  color: var(--texte-doux);
+  opacity: .34;
   transition: opacity .15s ease;
 }
-.carte__bascule:hover .carte__poignee,
-.carte--glissee .carte__poignee { opacity: .6; }
+.carte__bascule:hover svg.carte__poignee,
+.carte--glissee svg.carte__poignee { opacity: .7; }
 
 /* Carte en cours de déplacement */
 .carte--glissee {
@@ -211,18 +244,21 @@ ul { padding: 0; list-style: none; }
 body.glisser-en-cours { cursor: grabbing; }
 body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
-/* Chevron de pliage : SVG aux dimensions exactes, centré par le flex parent. */
-.carte__chevron {
+/* Chevron de pliage : rotation autour du centre du dessin. Sans
+   `transform-box: fill-box`, un <svg> tourne autour de l'origine de son viewBox
+   et sort de sa boîte (le chevron paraissait ne jamais basculer). */
+svg.carte__chevron {
   flex: none;
   display: block;
   width: 1rem;
   height: 1rem;
   margin-right: .25rem;
   color: var(--texte-doux);
+  transform-box: fill-box;
+  transform-origin: center;
   transition: transform .18s ease;
 }
-.carte--ouverte .carte__chevron { transform: rotate(180deg); }
-.carte--ouverte .carte__compte { display: none; }
+.carte--ouverte svg.carte__chevron { transform: rotate(180deg); }
 
 .carte__corps { margin-top: .9rem; }
 .carte--repliee .carte__corps { display: none; }
@@ -292,6 +328,10 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 /* ---------- Boutons ---------- */
 
 .bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .38rem;
   font: inherit;
   font-size: .85rem;
   font-weight: 600;
@@ -308,6 +348,11 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 .bouton:hover { border-color: var(--bord); }
 .bouton:active { transform: translateY(1px); }
 .bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Un libellé de bouton ne passe jamais sur deux lignes : c'est la rangée de
+   boutons qui se replie (les icônes restent alignées sur une seule ligne). */
+.bouton__libelle { white-space: nowrap; min-width: 0; }
+.bouton .icone { align-self: center; }
 
 .bouton--principal {
   background: linear-gradient(180deg, var(--accent-clair), var(--accent));
@@ -398,6 +443,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   border: 1px dashed var(--bord);
   border-radius: var(--rayon);
 }
+svg.vide__icone { display: block; margin: 0 auto .7rem; color: var(--accent); opacity: .45; }
 .vide__titre { font-size: 1.05rem; font-weight: 660; margin-bottom: .4rem; }
 .vide__texte { font-size: .88rem; color: var(--texte-doux); max-width: 46ch; margin: 0 auto 1.1rem; }
 
@@ -429,10 +475,40 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 }
 .dialogue::backdrop { background: rgba(9, 20, 28, .45); backdrop-filter: blur(3px); }
 
-.formulaire { padding: clamp(1.1rem, 4vw, 1.5rem); display: grid; gap: .85rem; }
-.dialogue__titre { font-size: 1.1rem; font-weight: 680; letter-spacing: -.01em; }
+.formulaire { position: relative; padding: clamp(1.1rem, 4vw, 1.5rem); display: grid; gap: .85rem; }
+.dialogue__titre {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.1rem;
+  font-weight: 680;
+  letter-spacing: -.01em;
+}
+.dialogue__titre .icone { color: var(--accent); }
+
+/* Fermeture : croix discrète en haut à droite, cible tactile de 44 px. */
+.dialogue__fermer {
+  position: absolute;
+  top: .35rem;
+  right: .35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--texte-doux);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.dialogue__fermer:hover { background: var(--surface-douce); color: var(--texte); }
+.dialogue__fermer:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .champ { display: grid; gap: .3rem; }
+.champ__aide { font-size: .72rem; color: var(--texte-doux); }
 .champ__libelle { font-size: .78rem; font-weight: 600; color: var(--texte-doux); }
 
 .champ__saisie {
@@ -449,7 +525,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
 .champ-duo { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
 
-.dialogue__actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .3rem; }
+.dialogue__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; margin-top: .3rem; }
 
 .scan {
   display: grid;
@@ -651,6 +727,9 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   width: min(360px, calc(100vw - 2rem));
 }
 .notification {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
   background: var(--texte);
   color: var(--fond);
   font-size: .82rem;
@@ -659,6 +738,8 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   box-shadow: var(--ombre);
   animation: apparaitre .18s ease-out;
 }
+.notification--alerte { background: var(--danger); color: #fff; }
+.notification .icone { opacity: .85; }
 @keyframes apparaitre { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------- Impression : mise en page moderne, lisible sur papier ---------- */
@@ -827,6 +908,46 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .carte__bascule { gap: .45rem; min-height: 2.6rem; }
   .carte__actions { gap: .25rem; }
   .carte__actions .bouton--petit { padding: .28rem .4rem; font-size: .69rem; }
+  .carte__actions .bouton { gap: .22rem; }
+
+  /*
+   * Rangées d'actions : une seule ligne, cases de largeur égale qui occupent
+   * tout l'espace, icône au-dessus du libellé pour que rien ne soit tronqué.
+   */
+  .carte__actions,
+  .medicament__actions {
+    display: grid;
+    gap: .3rem;
+  }
+  .carte__actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .medicament__actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .carte__actions > .bouton,
+  .carte__actions > bouton-action > .bouton,
+  .medicament__actions > .bouton,
+  .medicament__actions > bouton-action > .bouton { width: 100%; }
+  .carte__actions .bouton,
+  .medicament__actions .bouton {
+    flex-direction: column;
+    gap: .12rem;
+    padding: .36rem .18rem;
+    font-size: .64rem;
+    line-height: 1.15;
+  }
+  .carte__actions .bouton .icone,
+  .medicament__actions .bouton .icone { width: 16px; height: 16px; }
+
+  /* Dialogues : une action par ligne, pleine largeur (style feuille du bas). */
+  .dialogue__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .45rem;
+  }
+  .dialogue__actions > .bouton,
+  .dialogue__actions > bouton-action > .bouton { width: 100%; }
+
+  /* Scan : deux actions côte à côte (la fermeture est une croix en haut à droite). */
+  .dialogue__actions--multi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dialogue__actions--multi .bouton--lien { grid-column: 1 / -1; }
 
   .medicament { padding: .65rem .7rem; border-radius: 10px; }
   .medicament__ligne { gap: .35rem; }

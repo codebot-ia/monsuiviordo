@@ -20,6 +20,9 @@ import {
 } from "./logique.js";
 import { demarrerScan } from "./scan.js";
 import { demanderCadrage } from "./cadrage.js";
+// Composants d'interface (icônes, boutons, pastilles, champs) : enregistre les
+// éléments personnalisés utilisés dans le HTML et dans les rendus ci-dessous.
+import "./composants.js";
 import {
   versNiveauxDeGris,
   corrigerEclairage,
@@ -80,10 +83,38 @@ function echapper(texte) {
   return String(texte === null || texte === undefined ? "" : texte).replace(/[&<>"']/g, (c) => remplacements[c]);
 }
 
-function notifier(message) {
+/**
+ * Libellé d'un bouton : les boutons rendus par le composant <bouton-action>
+ * gardent leur icône dans un span dédié, qu'il faut viser au lieu de réécrire
+ * tout le contenu de la balise.
+ */
+function zoneLibelle(bouton) {
+  return bouton.querySelector(".bouton__libelle") || bouton;
+}
+
+function lireLibelle(bouton) {
+  return zoneLibelle(bouton).textContent.trim();
+}
+
+function definirLibelle(bouton, texte) {
+  zoneLibelle(bouton).textContent = texte;
+}
+
+/** Titre d'un dialogue : le texte vit dans un span, à côté de l'icône. */
+function definirTitreDialogue(titre, texte) {
+  const zone = titre.querySelector(".dialogue__titre-texte");
+  (zone || titre).textContent = texte;
+}
+
+function notifier(message, genre = "succes") {
   const bulle = document.createElement("p");
-  bulle.className = "notification";
-  bulle.textContent = message;
+  bulle.className = `notification notification--${genre}`;
+  const dessin = document.createElement("icone-tabler");
+  dessin.setAttribute("nom", genre === "alerte" ? "alerte" : genre === "info" ? "info" : "succes");
+  dessin.setAttribute("taille", "15");
+  const texte = document.createElement("span");
+  texte.textContent = message;
+  bulle.append(dessin, texte);
   elements.notifications.appendChild(bulle);
   while (elements.notifications.children.length > 2) {
     elements.notifications.firstElementChild.remove();
@@ -97,12 +128,12 @@ function notifier(message) {
  */
 function armerSuppression(bouton, cle) {
   desarmerSuppression();
-  bouton.dataset.libelleInitiale = bouton.textContent.trim();
-  bouton.textContent = "Certain ?";
+  bouton.dataset.libelleInitiale = lireLibelle(bouton);
+  definirLibelle(bouton, "Certain ?");
   bouton.classList.add("bouton--arme");
   suppressionArmee = cle;
   minuteurSuppression = window.setTimeout(() => {
-    bouton.textContent = bouton.dataset.libelleInitiale || "Supprimer";
+    definirLibelle(bouton, bouton.dataset.libelleInitiale || "Supprimer");
     bouton.classList.remove("bouton--arme");
     suppressionArmee = null;
     minuteurSuppression = null;
@@ -115,7 +146,7 @@ function desarmerSuppression() {
     minuteurSuppression = null;
   }
   document.querySelectorAll(".bouton--arme").forEach((bouton) => {
-    bouton.textContent = bouton.dataset.libelleInitiale || "Supprimer";
+    definirLibelle(bouton, bouton.dataset.libelleInitiale || "Supprimer");
     bouton.classList.remove("bouton--arme");
   });
   suppressionArmee = null;
@@ -210,20 +241,17 @@ function construireCarte(maladie, aujourdHui) {
             <span class="carte__sous-titre">${texteSousTitre(maladie, aujourdHui)}</span>
           </span>
           ${nombre ? `<span class="carte__compte" aria-hidden="true">${nombre}</span>` : ""}
-          <span class="carte__poignee" aria-hidden="true"></span>
-          <svg class="carte__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M3 5.5 8 10.5l5-5" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <icone-tabler class="carte__poignee" nom="poignee" taille="17"></icone-tabler>
+          <icone-tabler class="carte__chevron" nom="chevron" taille="17"></icone-tabler>
         </button>
       </h2>
     </header>
     <div class="carte__corps" id="corps-${maladie.id}">
       <div class="carte__actions">
-        <button type="button" class="bouton bouton--petit" data-action="ajouter-medicament">+ Médicament</button>
-        <button type="button" class="bouton bouton--petit" data-action="scanner-ordonnance">Scanner</button>
-        <button type="button" class="bouton bouton--petit" data-action="imprimer-carte">Imprimer</button>
-        <button type="button" class="bouton bouton--petit bouton--danger" data-action="supprimer-maladie">Supprimer</button>
+        <bouton-action icone="plus" variante="petit" action="ajouter-medicament" libelle="Médicament"></bouton-action>
+        <bouton-action icone="scanner" variante="petit" action="scanner-ordonnance" libelle="Scanner"></bouton-action>
+        <bouton-action icone="imprimer" variante="petit" action="imprimer-carte" libelle="Imprimer"></bouton-action>
+        <bouton-action icone="corbeille" variante="petit danger" action="supprimer-maladie" libelle="Supprimer"></bouton-action>
       </div>
       ${nombre
         ? `<ul class="medicaments">${lignes}</ul>`
@@ -244,21 +272,21 @@ function construireLigneMedicament(medicament, aujourdHui) {
     ? `Du ${formaterDate(medicament.debut)} au ${formaterDate(fin)} · ${duree}`
     : `<span class="ecran-seul">Durée prévue : </span>${duree}<span class="ecran-seul"> · pas encore démarré</span>`;
   const boutonDebut = medicament.debut
-    ? `<button type="button" class="bouton bouton--petit" data-action="annuler-debut">Annuler</button>`
-    : `<button type="button" class="bouton bouton--petit bouton--principal" data-action="demarrer">Début</button>`;
+    ? `<bouton-action icone="annuler" variante="petit" action="annuler-debut" libelle="Annuler"></bouton-action>`
+    : `<bouton-action icone="demarrer" variante="petit principal" action="demarrer" libelle="Début"></bouton-action>`;
 
   return `
     <li class="medicament" data-medicament="${medicament.id}">
       <div class="medicament__ligne">
         <span class="medicament__nom">${echapper(medicament.nom)}</span>
-        <span class="pastille pastille--${statut}">${libelles[statut]}${detail}</span>
+        <pastille-statut statut="${statut}">${libelles[statut]}${detail}</pastille-statut>
       </div>
       ${medicament.posologie ? `<p class="medicament__posologie">${echapper(medicament.posologie)}</p>` : ""}
       <p class="medicament__dates">${dates}</p>
       <div class="medicament__actions">
         ${boutonDebut}
-        <button type="button" class="bouton bouton--petit" data-action="modifier-medicament">Modifier</button>
-        <button type="button" class="bouton bouton--petit bouton--danger" data-action="supprimer-medicament">Supprimer</button>
+        <bouton-action icone="crayon" variante="petit" action="modifier-medicament" libelle="Modifier"></bouton-action>
+        <bouton-action icone="corbeille" variante="petit danger" action="supprimer-medicament" libelle="Supprimer"></bouton-action>
       </div>
     </li>
   `;
@@ -282,13 +310,13 @@ function ouvrirDialogueMedicament(idMaladie, idMedicament) {
   if (medicamentCible) {
     const medicament = maladie.medicaments.find((m) => m.id === medicamentCible);
     if (!medicament) return;
-    elements.titreDialogueMedicament.textContent = "Modifier le médicament";
+    definirTitreDialogue(elements.titreDialogueMedicament, "Modifier le médicament");
     elements.formulaireMedicament.elements.nom.value = medicament.nom;
     elements.formulaireMedicament.elements.posologie.value = medicament.posologie || "";
     elements.formulaireMedicament.elements.dureeJours.value = medicament.dureeJours;
     elements.formulaireMedicament.elements.debut.value = medicament.debut || "";
   } else {
-    elements.titreDialogueMedicament.textContent = "Nouveau médicament";
+    definirTitreDialogue(elements.titreDialogueMedicament, "Nouveau médicament");
     elements.formulaireMedicament.elements.dureeJours.value = 7;
   }
 
@@ -556,7 +584,10 @@ function ajouterLigneAnalyse(valeurs) {
           <input class="champ__saisie" data-champ="dureeJours" type="number" min="1" max="365"
                  value="${Number(valeurs.dureeJours) > 0 ? Number(valeurs.dureeJours) : 7}" aria-label="Durée en jours">
         </label>
-        <button type="button" class="bouton bouton--petit bouton--danger" data-retirer>Retirer</button>
+        <button type="button" class="bouton bouton--petit bouton--danger" data-retirer>
+          <icone-tabler nom="corbeille" taille="16"></icone-tabler>
+          <span class="bouton__libelle">Retirer</span>
+        </button>
       </div>
     </div>`;
   elements.listeAnalyse.appendChild(ligne);
@@ -567,7 +598,7 @@ function ajouterLigneAnalyse(valeurs) {
 function majBoutonAnalyse() {
   const total = elements.listeAnalyse.querySelectorAll('.ligne-analyse input[type="checkbox"]:checked').length;
   elements.boutonAjouterAnalyse.disabled = total === 0;
-  elements.boutonAjouterAnalyse.textContent = total > 1 ? `Ajouter ${total} médicaments` : "Ajouter le médicament";
+  definirLibelle(elements.boutonAjouterAnalyse, total > 1 ? `Ajouter ${total} médicaments` : "Ajouter le médicament");
 }
 
 function remplirAnalyse(ordonnance, texte) {
