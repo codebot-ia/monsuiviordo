@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>MonSuiviOrdo — suivi de traitements</title>
+    <meta name="description" content="Suivez vos ordonnances : maladies, médicaments, date de début et fin de traitement calculée automatiquement. Données stockées uniquement sur votre appareil.">
+    <meta name="theme-color" content="#0f766e">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icone-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/icone-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MonSuiviOrdo">
+    <link rel="stylesheet" href="./assets/style.css?v=1.10.0">
+  </head>
+  <body>
+    <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+    <header class="entete">
+      <div class="entete__contenu">
+        <div class="entete__marque">
+          <img class="entete__logo" src="./assets/icone-192.png" alt="" width="40" height="40">
+          <div>
+            <h1 class="entete__titre">MonSuiviOrdo</h1>
+            <p class="entete__sous-titre">Vos traitements, rien que sur cet appareil</p>
+          </div>
+        </div>
+        <div class="entete__actions">
+          <button id="bouton-installer" class="bouton bouton--discret" type="button" hidden>Installer</button>
+          <button id="bouton-imprimer-tout" class="bouton bouton--discret" type="button">Imprimer tout</button>
+          <button id="bouton-nouvelle-maladie" class="bouton bouton--principal" type="button">Nouvelle maladie</button>
+        </div>
+      </div>
+      <p class="impression-titre">Récapitulatif des traitements<span id="impression-date"></span></p>
+    </header>
+
+    <main id="contenu" class="contenu">
+      <p id="resume" class="resume" aria-live="polite"></p>
+      <section id="liste" class="liste" aria-label="Maladies suivies"></section>
+
+      <div id="vide" class="vide" hidden>
+        <p class="vide__titre">Aucune maladie suivie</p>
+        <p class="vide__texte">
+          Ajoutez une maladie (rhume, angine, gastro…), puis ses médicaments avec leur posologie
+          et leur durée. Appuyez ensuite sur « Début » : MonSuiviOrdo calcule la date de fin du
+          traitement et celle de la maladie.
+        </p>
+        <button type="button" class="bouton bouton--principal" data-action="nouvelle-maladie">
+          Créer ma première maladie
+        </button>
+      </div>
+    </main>
+
+    <footer class="pied">
+      <div class="pied__actions">
+        <button id="bouton-exporter" class="bouton bouton--lien" type="button">Sauvegarder mes données</button>
+        <button id="bouton-importer" class="bouton bouton--lien" type="button">Restaurer une sauvegarde</button>
+        <input id="champ-import" type="file" accept="application/json,.json" hidden>
+      </div>
+      <p class="pied__note">
+        Aucune donnée ne quitte cet appareil : pas de compte, pas de serveur. Pensez à sauvegarder
+        régulièrement, un nettoyage du navigateur efface le stockage local.
+      </p>
+    </footer>
+
+    <dialog id="dialogue-maladie" class="dialogue" aria-labelledby="titre-dialogue-maladie">
+      <form id="formulaire-maladie" class="formulaire">
+        <h2 id="titre-dialogue-maladie" class="dialogue__titre">Nouvelle maladie</h2>
+        <label class="champ">
+          <span class="champ__libelle">Nom de la maladie</span>
+          <input class="champ__saisie" name="nom" type="text" required maxlength="80"
+                 placeholder="Rhume, angine, gastro…" autocomplete="off">
+        </label>
+        <div class="dialogue__actions">
+          <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
+          <button type="submit" class="bouton bouton--principal">Créer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dialogue-medicament" class="dialogue" aria-labelledby="titre-dialogue-medicament">
+      <form id="formulaire-medicament" class="formulaire">
+        <h2 id="titre-dialogue-medicament" class="dialogue__titre">Nouveau médicament</h2>
+
+        <label class="champ">
+          <span class="champ__libelle">Médicament</span>
+          <input class="champ__saisie" name="nom" type="text" required maxlength="80"
+                 placeholder="Paracétamol 1000 mg" autocomplete="off">
+        </label>
+        <label class="champ">
+          <span class="champ__libelle">Posologie</span>
+          <input class="champ__saisie" name="posologie" type="text" maxlength="120"
+                 placeholder="2 comprimés matin et soir" autocomplete="off">
+        </label>
+        <div class="champ-duo">
+          <label class="champ">
+            <span class="champ__libelle">Durée (jours)</span>
+            <input class="champ__saisie" name="dureeJours" type="number" min="1" max="365"
+                   step="1" value="7" required inputmode="numeric">
+          </label>
+          <label class="champ">
+            <span class="champ__libelle">Début (facultatif)</span>
+            <input class="champ__saisie" name="debut" type="date">
+          </label>
+        </div>
+        <div class="dialogue__actions">
+          <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
+          <button type="submit" class="bouton bouton--principal">Enregistrer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <p class="impression-pied">Données saisies et conservées sur l'appareil de l'utilisateur — MonSuiviOrdo</p>
+
+    <input id="champ-photo-maladie" type="file" accept="image/*" capture="environment" hidden>
+
+    <dialog id="dialogue-scan" class="dialogue dialogue--scan" aria-labelledby="titre-scan">
+      <div class="formulaire">
+        <h2 id="titre-scan" class="dialogue__titre">Scanner l'ordonnance</h2>
+        <p class="dialogue__message">
+          Cadrez l'ordonnance dans le repère : l'app rogne l'image à ce cadre. Posez la feuille
+          bien à plat, évitez les ombres sur le papier et tenez l'appareil droit.
+        </p>
+        <div class="scan-capture">
+          <video id="flux-scan" class="scan-capture__video" autoplay playsinline muted></video>
+          <div id="cadre-scan" class="scan-capture__cadre" aria-hidden="true"></div>
+        </div>
+        <p id="etat-scan" class="scan__etat" aria-live="polite"></p>
+        <button type="button" id="bouton-fichier-scan" class="bouton bouton--lien">
+          Utiliser une photo déjà prise
+        </button>
+        <div class="dialogue__actions">
+          <button type="button" id="bouton-torche" class="bouton bouton--discret" aria-pressed="false" hidden>Torche</button>
+          <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
+          <button type="button" id="bouton-prendre" class="bouton bouton--principal">Prendre la photo</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dialogue-analyse" class="dialogue dialogue--large" aria-labelledby="titre-analyse">
+      <form id="formulaire-analyse" class="formulaire">
+        <h2 id="titre-analyse" class="dialogue__titre">Médicaments détectés</h2>
+        <p class="dialogue__message">
+          Relisez et corrigez chaque médicament, décochez ce qui ne doit pas être ajouté.
+        </p>
+        <p id="etat-analyse" class="scan__etat" aria-live="polite"></p>
+        <div id="liste-analyse" class="analyse"></div>
+        <details id="details-analyse" class="scan__details" hidden>
+          <summary>Texte reconnu</summary>
+          <pre id="texte-analyse" class="scan__texte"></pre>
+        </details>
+        <div class="dialogue__actions">
+          <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
+          <button type="submit" class="bouton bouton--principal" id="bouton-ajouter-analyse">Ajouter</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dialogue-confirmation" class="dialogue" aria-labelledby="titre-confirmation">
+      <form method="dialog" class="formulaire">
+        <h2 id="titre-confirmation" class="dialogue__titre">Confirmer</h2>
+        <p id="message-confirmation" class="dialogue__message"></p>
+        <div class="dialogue__actions">
+          <button type="submit" value="annuler" class="bouton bouton--discret">Annuler</button>
+          <button type="submit" value="confirmer" class="bouton bouton--danger-plein">Remplacer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
+
+    <script type="module" src="./assets/app.js?v=1.10.0"></script>
+  </body>
+</html>
