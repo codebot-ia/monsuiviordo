@@ -325,6 +325,13 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 }
 .bouton--discret:hover { color: var(--texte); }
 
+/* Bouton « enfoncé » (torche allumée) : l'état se voit sans texte ajouté. */
+.bouton--actif {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--bord));
+  color: var(--accent);
+}
+
 .bouton--petit {
   font-size: .78rem;
   padding: .34rem .6rem;
@@ -455,6 +462,9 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 .scan__aide { font-size: .74rem; color: var(--texte-doux); }
 .scan__etat { font-size: .78rem; color: var(--accent); min-height: 0; }
 .scan__etat:empty { display: none; }
+/* Ligne d'état de l'écran de capture : hauteur réservée, sinon l'apparition d'un
+   message fait sauter les boutons au moment où le doigt s'en approche. */
+.scan__etat.scan__etat--fixe { display: block; min-height: 1.15rem; }
 .scan__details { font-size: .78rem; color: var(--texte-doux); }
 .scan__details summary { cursor: pointer; }
 .scan__texte {

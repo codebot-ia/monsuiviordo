@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="./assets/icone-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MonSuiviOrdo">
-    <link rel="stylesheet" href="./assets/style.css?v=1.10.0">
+    <link rel="stylesheet" href="./assets/style.css?v=1.10.1">
   </head>
   <body>
     <a class="lien-evitement" href="#contenu">Aller au contenu</a>
@@ -112,7 +112,9 @@
 
     <p class="impression-pied">Données saisies et conservées sur l'appareil de l'utilisateur — MonSuiviOrdo</p>
 
+    <!-- capture="environment" : appareil photo direct. Son absence : galerie / fichiers. -->
     <input id="champ-photo-maladie" type="file" accept="image/*" capture="environment" hidden>
+    <input id="champ-photo-galerie" type="file" accept="image/*" hidden>
 
     <dialog id="dialogue-scan" class="dialogue dialogue--scan" aria-labelledby="titre-scan">
       <div class="formulaire">
@@ -125,7 +127,7 @@
           <video id="flux-scan" class="scan-capture__video" autoplay playsinline muted></video>
           <div id="cadre-scan" class="scan-capture__cadre" aria-hidden="true"></div>
         </div>
-        <p id="etat-scan" class="scan__etat" aria-live="polite"></p>
+        <p id="etat-scan" class="scan__etat scan__etat--fixe" aria-live="polite"></p>
         <button type="button" id="bouton-fichier-scan" class="bouton bouton--lien">
           Utiliser une photo déjà prise
         </button>
@@ -169,6 +171,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.10.0"></script>
+    <script type="module" src="./assets/app.js?v=1.10.1"></script>
   </body>
 </html>

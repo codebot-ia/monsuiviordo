@@ -108,8 +108,11 @@ export async function demarrerScan() {
       const allumee = boutonTorche.getAttribute("aria-pressed") !== "true";
       const applique = await reglerTorche(piste, allumee);
       if (!applique) return annoncer("Torche non disponible sur cet appareil.");
+      // L'état se lit sur le bouton (couleur + aria-pressed) : écrire une phrase
+      // dans la ligne d'état ferait bouger les boutons sous le doigt.
       boutonTorche.setAttribute("aria-pressed", String(allumee));
-      annoncer(allumee ? "Torche allumée." : "");
+      boutonTorche.classList.toggle("bouton--actif", allumee);
+      annoncer("");
     };
 
     const prendrePhoto = async () => {
@@ -169,6 +172,7 @@ export async function demarrerScan() {
     if (boutonTorche) {
       boutonTorche.hidden = true;
       boutonTorche.setAttribute("aria-pressed", "false");
+      boutonTorche.classList.remove("bouton--actif");
       boutonTorche.addEventListener("click", basculerTorche);
     }
 

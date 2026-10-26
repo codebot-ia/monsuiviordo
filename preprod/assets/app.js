@@ -50,6 +50,7 @@ const elements = {
   dialogueConfirmation: document.getElementById("dialogue-confirmation"),
   messageConfirmation: document.getElementById("message-confirmation"),
   champPhotoMaladie: document.getElementById("champ-photo-maladie"),
+  champPhotoGalerie: document.getElementById("champ-photo-galerie"),
   dialogueAnalyse: document.getElementById("dialogue-analyse"),
   formulaireAnalyse: document.getElementById("formulaire-analyse"),
   listeAnalyse: document.getElementById("liste-analyse"),
@@ -479,7 +480,7 @@ async function lancerScan(idMaladie) {
     return;
   }
   if (resultat.type === "photo") scannerPourMaladie(idMaladie, resultat.fichier);
-  else if (resultat.type === "fichier") elements.champPhotoMaladie.click();
+  else if (resultat.type === "fichier") elements.champPhotoGalerie.click();
 }
 
 /** Ouvre l'aperçu d'analyse, puis remplit les médicaments détectés pour relecture. */
@@ -627,11 +628,17 @@ elements.formulaireMedicament.addEventListener("submit", (evenement) => {
   elements.dialogueMedicament.close();
 });
 
-elements.champPhotoMaladie.addEventListener("change", () => {
-  const fichier = elements.champPhotoMaladie.files && elements.champPhotoMaladie.files[0];
-  elements.champPhotoMaladie.value = "";
-  if (fichier && maladieCible) scannerPourMaladie(maladieCible, fichier);
-});
+/** Un champ fichier vient de rendre une image (photo prise ou galerie). */
+function ecouterPhotoChoisie(champ) {
+  if (!champ) return;
+  champ.addEventListener("change", () => {
+    const fichier = champ.files && champ.files[0];
+    champ.value = "";
+    if (fichier && maladieCible) scannerPourMaladie(maladieCible, fichier);
+  });
+}
+ecouterPhotoChoisie(elements.champPhotoMaladie);
+ecouterPhotoChoisie(elements.champPhotoGalerie);
 
 elements.listeAnalyse.addEventListener("click", (evenement) => {
   const retirer = evenement.target.closest("[data-retirer]");
