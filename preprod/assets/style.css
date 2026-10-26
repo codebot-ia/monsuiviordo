@@ -884,6 +884,39 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .carte__actions .bouton { gap: .22rem; }
   .carte__actions .bouton .icone { width: 13px; height: 13px; }
 
+  /*
+   * Rangées d'actions : grille régulière plutôt qu'un retour à la ligne qui
+   * laisse un bouton orphelin. Chaque case fait la même largeur et le libellé
+   * tient sur une ligne.
+   */
+  .carte__actions,
+  .medicament__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .3rem;
+  }
+  .carte__actions > .bouton,
+  .carte__actions > bouton-action > .bouton,
+  .medicament__actions > .bouton,
+  .medicament__actions > bouton-action > .bouton { width: 100%; }
+  /* Premier bouton (Début / Annuler) sur toute la largeur : 3 actions = 1 + 2. */
+  .medicament__actions > :first-child > .bouton,
+  .medicament__actions > .bouton:first-child { grid-column: 1 / -1; }
+
+  /* Dialogues : une action par ligne, pleine largeur (style feuille du bas). */
+  .dialogue__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .45rem;
+  }
+  .dialogue__actions > .bouton,
+  .dialogue__actions > bouton-action > .bouton { width: 100%; }
+
+  /* Quatre actions : deux colonnes, l'action principale sur toute la largeur. */
+  .dialogue__actions--multi { grid-template-columns: 1fr 1fr; }
+  .dialogue__actions--multi .bouton--principal,
+  .dialogue__actions--multi .bouton--lien { grid-column: 1 / -1; }
+
   .medicament { padding: .65rem .7rem; border-radius: 10px; }
   .medicament__ligne { gap: .35rem; }
   .medicament__nom { font-size: .92rem; line-height: 1.3; overflow-wrap: anywhere; }
