@@ -325,6 +325,13 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 }
 .bouton--discret:hover { color: var(--texte); }
 
+/* Bouton « enfoncé » (torche allumée) : l'état se voit sans texte ajouté. */
+.bouton--actif {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--bord));
+  color: var(--accent);
+}
+
 .bouton--petit {
   font-size: .78rem;
   padding: .34rem .6rem;
@@ -455,6 +462,9 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 .scan__aide { font-size: .74rem; color: var(--texte-doux); }
 .scan__etat { font-size: .78rem; color: var(--accent); min-height: 0; }
 .scan__etat:empty { display: none; }
+/* Ligne d'état de l'écran de capture : hauteur réservée, sinon l'apparition d'un
+   message fait sauter les boutons au moment où le doigt s'en approche. */
+.scan__etat.scan__etat--fixe { display: block; min-height: 1.15rem; }
 .scan__details { font-size: .78rem; color: var(--texte-doux); }
 .scan__details summary { cursor: pointer; }
 .scan__texte {
@@ -469,6 +479,101 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   border-radius: 8px;
   padding: .5rem;
 }
+
+/* ---------- Capture d'ordonnance à la caméra ---------- */
+
+.dialogue--scan { width: min(520px, calc(100vw - 2rem)); }
+
+.scan-capture {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--rayon-petit);
+  background: #0b141a;
+  aspect-ratio: 3 / 4;
+  max-height: 56vh;
+  margin-inline: auto;
+}
+.scan-capture__video { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Le repère de visée : c'est exactement ce rectangle que l'app découpe. */
+.scan-capture__cadre {
+  position: absolute;
+  inset: 6% 5%;
+  border: 2px solid rgba(255, 255, 255, .9);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax rgba(9, 20, 28, .55);
+  pointer-events: none;
+}
+
+/* ---------- Recadrage après la prise de vue ---------- */
+
+.cadrage {
+  position: relative;
+  overflow: hidden;
+  margin-inline: auto;
+  border-radius: var(--rayon-petit);
+  background: #0b141a;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cadrage__image { display: block; width: 100%; height: 100%; }
+/* La zone gardée reste nette, le reste est assombri : c'est exactement ce qui
+   sera découpé puis passé à l'OCR. */
+.cadrage__zone {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, .95);
+  border-radius: 4px;
+  box-shadow: 0 0 0 100vmax rgba(9, 20, 28, .58), inset 0 0 0 1px rgba(9, 20, 28, .45);
+  cursor: move;
+  touch-action: none;
+}
+/* Cibles tactiles de 48 px (recommandation tactile) posées dans les coins :
+   le repère visible reste fin, mais le doigt a de la place pour attraper. */
+.cadrage__coin {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  touch-action: none;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cadrage__coin::before {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--accent);
+  /* halo clair + ombre : le repère se voit sur le papier blanc comme sur le fond sombre */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 1px 5px rgba(9, 20, 28, .45);
+  border-radius: 8px;
+}
+/* Chaque coin dessine une équerre tournée vers l'intérieur de la zone. */
+.cadrage__coin[data-coin="no"] { left: 0; top: 0; cursor: nwse-resize; }
+.cadrage__coin[data-coin="no"]::before { left: -2px; top: -2px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.cadrage__coin[data-coin="ne"] { right: 0; top: 0; cursor: nesw-resize; }
+.cadrage__coin[data-coin="ne"]::before { right: -2px; top: -2px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.cadrage__coin[data-coin="so"] { left: 0; bottom: 0; cursor: nesw-resize; }
+.cadrage__coin[data-coin="so"]::before { left: -2px; bottom: -2px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.cadrage__coin[data-coin="se"] { right: 0; bottom: 0; cursor: nwse-resize; }
+.cadrage__coin[data-coin="se"]::before { right: -2px; bottom: -2px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+
+/* Taille de la découpe, en pixels : montre le gain obtenu en cadrant serré. */
+.cadrage__mesure {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: .18rem .45rem;
+  border-radius: 999px;
+  background: rgba(9, 20, 28, .62);
+  color: #fff;
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Quatre boutons ne tiennent pas sur une ligne de téléphone. */
+.dialogue__actions--multi { flex-wrap: wrap; }
 
 /* ---------- Aperçu d'analyse d'ordonnance ---------- */
 

@@ -18,6 +18,15 @@ import {
   extraireOrdonnance,
   resumer
 } from "./logique.js";
+import { demarrerScan } from "./scan.js";
+import { demanderCadrage } from "./cadrage.js";
+import {
+  versNiveauxDeGris,
+  corrigerEclairage,
+  etirerContraste,
+  accentuerContours,
+  binariser as binariserImage
+} from "./traitement-image.js";
 
 const CLE_STOCKAGE = "monsuiviordo.v1";
 // Tout est servi par le site : aucune dépendance externe pour l'OCR.
@@ -43,6 +52,7 @@ const elements = {
   dialogueConfirmation: document.getElementById("dialogue-confirmation"),
   messageConfirmation: document.getElementById("message-confirmation"),
   champPhotoMaladie: document.getElementById("champ-photo-maladie"),
+  champPhotoGalerie: document.getElementById("champ-photo-galerie"),
   dialogueAnalyse: document.getElementById("dialogue-analyse"),
   formulaireAnalyse: document.getElementById("formulaire-analyse"),
   listeAnalyse: document.getElementById("liste-analyse"),
@@ -371,10 +381,12 @@ function chargerTesseract() {
 }
 
 /**
- * Prépare la photo avant OCR : agrandissement, niveaux de gris, contraste.
- * Une ordonnance photographiée donne de bien meilleurs résultats ainsi.
+ * Prépare la photo avant OCR : mise à l'échelle, niveaux de gris, correction de
+ * l'éclairage (ombres, lampe d'un côté), puis étirement du contraste.
+ * « durcir » ajoute un seuillage adaptatif noir/blanc, réservé à la seconde
+ * tentative : une photo bien exposée donne de meilleurs résultats en gris.
  */
-async function preparerImage(fichier) {
+async function preparerImage(fichier, { durcir = false } = {}) {
   try {
     const bitmap = await createImageBitmap(fichier);
     const largeurCible = Math.min(2200, Math.max(1400, bitmap.width));
@@ -383,14 +395,16 @@ async function preparerImage(fichier) {
     canevas.width = Math.round(bitmap.width * echelle);
     canevas.height = Math.round(bitmap.height * echelle);
     const contexte = canevas.getContext("2d", { willReadFrequently: true });
+    contexte.imageSmoothingQuality = "high";
     contexte.drawImage(bitmap, 0, 0, canevas.width, canevas.height);
     const image = contexte.getImageData(0, 0, canevas.width, canevas.height);
-    const donnees = image.data;
-    for (let i = 0; i < donnees.length; i += 4) {
-      const gris = 0.299 * donnees[i] + 0.587 * donnees[i + 1] + 0.114 * donnees[i + 2];
-      const contraste = Math.max(0, Math.min(255, (gris - 140) * 1.45 + 140));
-      donnees[i] = donnees[i + 1] = donnees[i + 2] = contraste;
-    }
+    versNiveauxDeGris(image);
+    corrigerEclairage(image);
+    etirerContraste(image);
+    // Découpe agrandie (peu de pixels au départ) : un peu de netteté rend les
+    // lettres plus franches pour Tesseract. Jamais sur une photo réduite.
+    if (echelle > 1.15) accentuerContours(image, { force: 0.7 });
+    if (durcir) binariserImage(image);
     contexte.putImageData(image, 0, 0);
     return canevas;
   } catch (erreur) {
@@ -399,13 +413,19 @@ async function preparerImage(fichier) {
   }
 }
 
-/** Lance l'OCR locale sur une photo et renvoie le texte reconnu. */
-async function lireTexte(fichier) {
-  elements.etatAnalyse.textContent = "Préparation de l'image…";
-  const source = await preparerImage(fichier);
-  elements.etatAnalyse.textContent = "Chargement du moteur de reconnaissance (une seule fois)…";
-  const Tesseract = await chargerTesseract();
-  elements.etatAnalyse.textContent = "Reconnaissance en cours…";
+// En dessous de ce nombre de lettres, la lecture est jugée trop pauvre pour
+// être proposée : on retente sur une image noir/blanc.
+const LETTRES_MINIMUM = 25;
+// Message de progression courant : le moteur rappelle sa progression souvent.
+let messageReconnaissance = "Reconnaissance en cours…";
+
+function compterLettres(texte) {
+  const lettres = String(texte || "").match(/\p{L}/gu);
+  return lettres ? lettres.length : 0;
+}
+
+/** Crée le moteur Tesseract, paramétré pour une ordonnance (colonne unique). */
+async function creerWorker(Tesseract) {
   const worker = await Tesseract.createWorker("fra", 1, {
     workerPath: `${RACINE_OCR}worker.min.js`,
     corePath: RACINE_OCR,
@@ -414,7 +434,7 @@ async function lireTexte(fichier) {
     workerBlobURL: false,
     logger: (m) => {
       if (m.status === "recognizing text") {
-        elements.etatAnalyse.textContent = `Reconnaissance en cours… ${Math.round((m.progress || 0) * 100)} %`;
+        elements.etatAnalyse.textContent = `${messageReconnaissance} ${Math.round((m.progress || 0) * 100)} %`;
       }
     }
   });
@@ -424,9 +444,67 @@ async function lireTexte(fichier) {
     tessedit_pageseg_mode: "4",
     preserve_interword_spaces: "1"
   });
+  return worker;
+}
+
+async function reconnaitre(worker, source, message) {
+  messageReconnaissance = message;
+  elements.etatAnalyse.textContent = message;
   const { data } = await worker.recognize(source);
-  await worker.terminate();
   return (data && data.text ? data.text : "").trim();
+}
+
+/** Lance l'OCR locale sur une photo et renvoie le texte reconnu. */
+async function lireTexte(fichier) {
+  elements.etatAnalyse.textContent = "Préparation de l'image…";
+  const premiere = await preparerImage(fichier);
+  elements.etatAnalyse.textContent = "Chargement du moteur de reconnaissance (une seule fois)…";
+  const Tesseract = await chargerTesseract();
+  const worker = await creerWorker(Tesseract);
+  try {
+    const texte = await reconnaitre(worker, premiere, "Reconnaissance en cours…");
+    if (compterLettres(texte) >= LETTRES_MINIMUM) return texte;
+    // Photo difficile : seconde passe sur une image seuillée (noir/blanc).
+    const renforcee = await preparerImage(fichier, { durcir: true });
+    const texteRenforce = await reconnaitre(worker, renforcee, "Deuxième lecture, image renforcée…");
+    return compterLettres(texteRenforce) > compterLettres(texte) ? texteRenforce : texte;
+  } finally {
+    await worker.terminate();
+  }
+}
+
+/**
+ * Photo prise ou choisie -> passage par l'écran de cadrage -> OCR.
+ * « reprise » n'a de sens qu'après une prise de vue.
+ */
+async function cadrerPuisAnalyser(idMaladie, fichier, { reprise }) {
+  if (!fichier) return;
+  const choix = await demanderCadrage(fichier, { reprise });
+  if (!choix) return;
+  if (choix.recommencer) return "recommencer";
+  scannerPourMaladie(idMaladie, choix.fichier);
+}
+
+/** Ouvre l'écran de capture, avec repli sur le sélecteur de fichier natif. */
+async function lancerScan(idMaladie) {
+  maladieCible = idMaladie;
+  for (;;) {
+    let capture;
+    try {
+      capture = await demarrerScan();
+    } catch (erreur) {
+      console.warn("Caméra indisponible, sélection de fichier", erreur);
+      elements.champPhotoMaladie.click();
+      return;
+    }
+    if (capture.type === "fichier") {
+      elements.champPhotoGalerie.click();
+      return;
+    }
+    if (capture.type !== "photo") return;
+    const suite = await cadrerPuisAnalyser(idMaladie, capture.fichier, { reprise: true });
+    if (suite !== "recommencer") return;
+  }
 }
 
 /** Ouvre l'aperçu d'analyse, puis remplit les médicaments détectés pour relecture. */
@@ -574,11 +652,17 @@ elements.formulaireMedicament.addEventListener("submit", (evenement) => {
   elements.dialogueMedicament.close();
 });
 
-elements.champPhotoMaladie.addEventListener("change", () => {
-  const fichier = elements.champPhotoMaladie.files && elements.champPhotoMaladie.files[0];
-  elements.champPhotoMaladie.value = "";
-  if (fichier && maladieCible) scannerPourMaladie(maladieCible, fichier);
-});
+/** Un champ fichier vient de rendre une image (photo prise ou galerie). */
+function ecouterPhotoChoisie(champ) {
+  if (!champ) return;
+  champ.addEventListener("change", () => {
+    const fichier = champ.files && champ.files[0];
+    champ.value = "";
+    if (fichier && maladieCible) cadrerPuisAnalyser(maladieCible, fichier, { reprise: false });
+  });
+}
+ecouterPhotoChoisie(elements.champPhotoMaladie);
+ecouterPhotoChoisie(elements.champPhotoGalerie);
 
 elements.listeAnalyse.addEventListener("click", (evenement) => {
   const retirer = evenement.target.closest("[data-retirer]");
@@ -662,9 +746,8 @@ elements.liste.addEventListener("click", (evenement) => {
     case "scanner-ordonnance": {
       const maladie = trouverMaladie(idMaladie);
       if (!maladie) break;
-      maladieCible = idMaladie;
       cartesOuvertes.add(idMaladie);
-      elements.champPhotoMaladie.click();
+      lancerScan(idMaladie);
       break;
     }
 
