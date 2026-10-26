@@ -504,6 +504,45 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   pointer-events: none;
 }
 
+/* ---------- Recadrage après la prise de vue ---------- */
+
+.cadrage {
+  position: relative;
+  overflow: hidden;
+  margin-inline: auto;
+  border-radius: var(--rayon-petit);
+  background: #0b141a;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cadrage__image { display: block; width: 100%; height: 100%; }
+/* La zone gardée reste nette, le reste est assombri : c'est exactement ce qui
+   sera découpé puis passé à l'OCR. */
+.cadrage__zone {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, .95);
+  box-shadow: 0 0 0 100vmax rgba(9, 20, 28, .55);
+  cursor: move;
+  touch-action: none;
+}
+.cadrage__coin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(9, 20, 28, .5);
+}
+.cadrage__coin[data-coin="no"] { left: 3px; top: 3px; }
+.cadrage__coin[data-coin="ne"] { right: 3px; top: 3px; }
+.cadrage__coin[data-coin="so"] { left: 3px; bottom: 3px; }
+.cadrage__coin[data-coin="se"] { right: 3px; bottom: 3px; }
+
+/* Quatre boutons ne tiennent pas sur une ligne de téléphone. */
+.dialogue__actions--multi { flex-wrap: wrap; }
+
 /* ---------- Aperçu d'analyse d'ordonnance ---------- */
 
 .dialogue--large { width: min(560px, calc(100vw - 2rem)); }

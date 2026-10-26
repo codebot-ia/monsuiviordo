@@ -136,29 +136,97 @@ export function binariser(image, { rayon, decalage = 0.15 } = {}) {
 }
 
 /**
- * Rectangle de la vidéo réellement visible dans le repère de visée, quand la
- * vidéo est affichée en « object-fit: cover » (l'image remplit la zone et
- * déborde sur les côtés). Tout est en pixels : ceux de l'écran en entrée, ceux
- * de la vidéo en sortie.
- *
- * @param {{largeurVideo:number, hauteurVideo:number, largeurVue:number, hauteurVue:number}} vue
- * @param {{gauche:number, haut:number, largeur:number, hauteur:number}} cadre
- *        repère de visée, en coordonnées locales à la zone d'affichage
- * @returns {{x:number, y:number, largeur:number, hauteur:number}}
+ * Accentue les contours (masque flou léger) : rendu d'un agrandissement moins
+ * mou, ce qui aide Tesseract sur les petites découpes passées en grand.
+ * À réserver aux images agrandies (force ~0.7), sinon le bruit de la photo ressort.
  */
-export function recadrerSurCadre(vue, cadre) {
-  const { largeurVideo, hauteurVideo, largeurVue, hauteurVue } = vue;
-  const entier = (v) => Math.max(0, Math.round(v));
-  if (!(largeurVideo > 0 && hauteurVideo > 0 && largeurVue > 0 && hauteurVue > 0)) {
-    return { x: 0, y: 0, largeur: entier(largeurVideo), hauteur: entier(hauteurVideo) };
+export function accentuerContours(image, { force = 0.7 } = {}) {
+  const { data, width, height } = image;
+  if (width < 3 || height < 3) return image;
+  const source = data.slice(); // copie : on lit les voisins d'origine
+  const dose = Math.max(0, force);
+  const pas = width * 4;
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const i = (y * width + x) * 4;
+      const voisins = (source[i - 4] + source[i + 4] + source[i - pas] + source[i + pas]) / 4;
+      const v = Math.min(255, Math.max(0, source[i] + dose * (source[i] - voisins)));
+      data[i] = data[i + 1] = data[i + 2] = v;
+    }
   }
-  const echelle = Math.max(largeurVue / largeurVideo, hauteurVue / hauteurVideo);
-  const margeX = (largeurVue - largeurVideo * echelle) / 2;
-  const margeY = (hauteurVue - hauteurVideo * echelle) / 2;
-  const borner = (valeur, maximum) => Math.min(maximum, Math.max(0, valeur));
-  const x1 = borner((cadre.gauche - margeX) / echelle, largeurVideo);
-  const y1 = borner((cadre.haut - margeY) / echelle, hauteurVideo);
-  const x2 = borner((cadre.gauche + cadre.largeur - margeX) / echelle, largeurVideo);
-  const y2 = borner((cadre.haut + cadre.hauteur - margeY) / echelle, hauteurVideo);
-  return { x: entier(x1), y: entier(y1), largeur: entier(x2 - x1), hauteur: entier(y2 - y1) };
+  return image;
+}
+
+/**
+ * Ramène une zone de recadrage dans l'image, en gardant une taille minimale.
+ * Une zone est exprimée en fractions de l'image : { x, y, largeur, hauteur } ∈ [0, 1].
+ */
+export function bornerZone(zone, minimum = 0.06) {
+  const nombre = (valeur, defaut) => (Number.isFinite(valeur) ? valeur : defaut);
+  const largeur = Math.min(1, Math.max(minimum, nombre(zone && zone.largeur, 1)));
+  const hauteur = Math.min(1, Math.max(minimum, nombre(zone && zone.hauteur, 1)));
+  const x = Math.min(1 - largeur, Math.max(0, nombre(zone && zone.x, 0)));
+  const y = Math.min(1 - hauteur, Math.max(0, nombre(zone && zone.y, 0)));
+  return { x, y, largeur, hauteur };
+}
+
+/**
+ * Déplace ou redimensionne une zone de recadrage.
+ * « prise » : "centre" pour déplacer, sinon un ou deux côtés — "n", "s", "o", "e"
+ * et leurs combinaisons ("no", "ne", "so", "se") pour les coins.
+ * dx et dy sont des fractions de la largeur / hauteur de l'image.
+ */
+export function deplacerZone(zone, prise, dx, dy, minimum = 0.06) {
+  const depart = bornerZone(zone, minimum);
+  let gauche = depart.x;
+  let haut = depart.y;
+  let droite = depart.x + depart.largeur;
+  let bas = depart.y + depart.hauteur;
+
+  if (prise === "centre") {
+    gauche += dx;
+    droite += dx;
+    haut += dy;
+    bas += dy;
+    if (gauche < 0) {
+      droite -= gauche;
+      gauche = 0;
+    }
+    if (droite > 1) {
+      gauche -= droite - 1;
+      droite = 1;
+    }
+    if (haut < 0) {
+      bas -= haut;
+      haut = 0;
+    }
+    if (bas > 1) {
+      haut -= bas - 1;
+      bas = 1;
+    }
+  } else {
+    if (prise.includes("n")) haut = Math.min(haut + dy, bas - minimum);
+    if (prise.includes("s")) bas = Math.max(bas + dy, haut + minimum);
+    if (prise.includes("o")) gauche = Math.min(gauche + dx, droite - minimum);
+    if (prise.includes("e")) droite = Math.max(droite + dx, gauche + minimum);
+    gauche = Math.max(0, gauche);
+    haut = Math.max(0, haut);
+    droite = Math.min(1, droite);
+    bas = Math.min(1, bas);
+  }
+
+  return bornerZone({ x: gauche, y: haut, largeur: droite - gauche, hauteur: bas - haut }, minimum);
+}
+
+/** Convertit une zone en fractions vers un rectangle de pixels (entiers, dans l'image). */
+export function zoneVersPixels(zone, width, height) {
+  const z = bornerZone(zone);
+  const x = Math.min(Math.max(0, Math.round(z.x * width)), Math.max(0, width - 1));
+  const y = Math.min(Math.max(0, Math.round(z.y * height)), Math.max(0, height - 1));
+  return {
+    x,
+    y,
+    largeur: Math.max(1, Math.min(Math.round(z.largeur * width), width - x)),
+    hauteur: Math.max(1, Math.min(Math.round(z.hauteur * height), height - y))
+  };
 }

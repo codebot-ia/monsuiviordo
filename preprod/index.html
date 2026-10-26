@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="./assets/icone-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MonSuiviOrdo">
-    <link rel="stylesheet" href="./assets/style.css?v=1.10.1">
+    <link rel="stylesheet" href="./assets/style.css?v=1.11.0">
   </head>
   <body>
     <a class="lien-evitement" href="#contenu">Aller au contenu</a>
@@ -120,8 +120,8 @@
       <div class="formulaire">
         <h2 id="titre-scan" class="dialogue__titre">Scanner l'ordonnance</h2>
         <p class="dialogue__message">
-          Cadrez l'ordonnance dans le repère : l'app rogne l'image à ce cadre. Posez la feuille
-          bien à plat, évitez les ombres sur le papier et tenez l'appareil droit.
+          Cadrez la feuille entière dans le repère, bien à plat, sans ombre sur le papier : vous
+          choisirez juste après la zone à lire, en l'agrandissant.
         </p>
         <div class="scan-capture">
           <video id="flux-scan" class="scan-capture__video" autoplay playsinline muted></video>
@@ -135,6 +135,32 @@
           <button type="button" id="bouton-torche" class="bouton bouton--discret" aria-pressed="false" hidden>Torche</button>
           <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
           <button type="button" id="bouton-prendre" class="bouton bouton--principal">Prendre la photo</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dialogue-cadrage" class="dialogue dialogue--large" aria-labelledby="titre-cadrage">
+      <div class="formulaire">
+        <h2 id="titre-cadrage" class="dialogue__titre">Cadrer la zone à lire</h2>
+        <p class="dialogue__message">
+          Déplacez la zone (au doigt) ou ses coins pour ne garder que les lignes utiles : moins de
+          décor autour, plus de pixels par lettre, et une lecture plus fiable.
+        </p>
+        <div id="vue-cadrage" class="cadrage">
+          <canvas id="canevas-cadrage" class="cadrage__image"></canvas>
+          <div id="zone-cadrage" class="cadrage__zone">
+            <span class="cadrage__coin" data-coin="no" aria-hidden="true"></span>
+            <span class="cadrage__coin" data-coin="ne" aria-hidden="true"></span>
+            <span class="cadrage__coin" data-coin="so" aria-hidden="true"></span>
+            <span class="cadrage__coin" data-coin="se" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p id="etat-cadrage" class="scan__etat scan__etat--fixe" aria-live="polite"></p>
+        <div class="dialogue__actions dialogue__actions--multi">
+          <button type="button" id="bouton-cadrage-entier" class="bouton bouton--lien">Toute l'image</button>
+          <button type="button" id="bouton-reprendre" class="bouton bouton--discret">Reprendre</button>
+          <button type="button" class="bouton bouton--discret" data-fermer>Annuler</button>
+          <button type="button" id="bouton-analyser" class="bouton bouton--principal">Lire cette zone</button>
         </div>
       </div>
     </dialog>
@@ -171,6 +197,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.10.1"></script>
+    <script type="module" src="./assets/app.js?v=1.11.0"></script>
   </body>
 </html>

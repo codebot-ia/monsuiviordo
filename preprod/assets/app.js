@@ -19,10 +19,12 @@ import {
   resumer
 } from "./logique.js";
 import { demarrerScan } from "./scan.js";
+import { demanderCadrage } from "./cadrage.js";
 import {
   versNiveauxDeGris,
   corrigerEclairage,
   etirerContraste,
+  accentuerContours,
   binariser as binariserImage
 } from "./traitement-image.js";
 
@@ -399,6 +401,9 @@ async function preparerImage(fichier, { durcir = false } = {}) {
     versNiveauxDeGris(image);
     corrigerEclairage(image);
     etirerContraste(image);
+    // Découpe agrandie (peu de pixels au départ) : un peu de netteté rend les
+    // lettres plus franches pour Tesseract. Jamais sur une photo réduite.
+    if (echelle > 1.15) accentuerContours(image, { force: 0.7 });
     if (durcir) binariserImage(image);
     contexte.putImageData(image, 0, 0);
     return canevas;
@@ -468,19 +473,38 @@ async function lireTexte(fichier) {
   }
 }
 
+/**
+ * Photo prise ou choisie -> passage par l'écran de cadrage -> OCR.
+ * « reprise » n'a de sens qu'après une prise de vue.
+ */
+async function cadrerPuisAnalyser(idMaladie, fichier, { reprise }) {
+  if (!fichier) return;
+  const choix = await demanderCadrage(fichier, { reprise });
+  if (!choix) return;
+  if (choix.recommencer) return "recommencer";
+  scannerPourMaladie(idMaladie, choix.fichier);
+}
+
 /** Ouvre l'écran de capture, avec repli sur le sélecteur de fichier natif. */
 async function lancerScan(idMaladie) {
   maladieCible = idMaladie;
-  let resultat;
-  try {
-    resultat = await demarrerScan();
-  } catch (erreur) {
-    console.warn("Caméra indisponible, sélection de fichier", erreur);
-    elements.champPhotoMaladie.click();
-    return;
+  for (;;) {
+    let capture;
+    try {
+      capture = await demarrerScan();
+    } catch (erreur) {
+      console.warn("Caméra indisponible, sélection de fichier", erreur);
+      elements.champPhotoMaladie.click();
+      return;
+    }
+    if (capture.type === "fichier") {
+      elements.champPhotoGalerie.click();
+      return;
+    }
+    if (capture.type !== "photo") return;
+    const suite = await cadrerPuisAnalyser(idMaladie, capture.fichier, { reprise: true });
+    if (suite !== "recommencer") return;
   }
-  if (resultat.type === "photo") scannerPourMaladie(idMaladie, resultat.fichier);
-  else if (resultat.type === "fichier") elements.champPhotoGalerie.click();
 }
 
 /** Ouvre l'aperçu d'analyse, puis remplit les médicaments détectés pour relecture. */
@@ -634,7 +658,7 @@ function ecouterPhotoChoisie(champ) {
   champ.addEventListener("change", () => {
     const fichier = champ.files && champ.files[0];
     champ.value = "";
-    if (fichier && maladieCible) scannerPourMaladie(maladieCible, fichier);
+    if (fichier && maladieCible) cadrerPuisAnalyser(maladieCible, fichier, { reprise: false });
   });
 }
 ecouterPhotoChoisie(elements.champPhotoMaladie);
