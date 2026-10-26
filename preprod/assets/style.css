@@ -221,15 +221,17 @@ icone-tabler { display: contents; }
   text-align: center;
 }
 
-/* Poignée de glisser : icône discrète, sans fond (elle s'imprime mal). */
-.carte__poignee {
+/* Poignée de glisser : icône discrète, sans fond (elle s'imprime mal).
+   Les règles visent le <svg> rendu par le composant, pas son hôte : l'hôte est
+   en display: contents et ne porte aucune boîte à dimensionner. */
+svg.carte__poignee {
   flex: none;
   color: var(--texte-doux);
   opacity: .34;
   transition: opacity .15s ease;
 }
-.carte__bascule:hover .carte__poignee,
-.carte--glissee .carte__poignee { opacity: .7; }
+.carte__bascule:hover svg.carte__poignee,
+.carte--glissee svg.carte__poignee { opacity: .7; }
 
 /* Carte en cours de déplacement */
 .carte--glissee {
@@ -242,17 +244,21 @@ icone-tabler { display: contents; }
 body.glisser-en-cours { cursor: grabbing; }
 body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
-/* Chevron de pliage : SVG aux dimensions exactes, centré par le flex parent. */
-.carte__chevron {
+/* Chevron de pliage : rotation autour du centre du dessin. Sans
+   `transform-box: fill-box`, un <svg> tourne autour de l'origine de son viewBox
+   et sort de sa boîte (le chevron paraissait ne jamais basculer). */
+svg.carte__chevron {
   flex: none;
   display: block;
   width: 1rem;
   height: 1rem;
   margin-right: .25rem;
   color: var(--texte-doux);
+  transform-box: fill-box;
+  transform-origin: center;
   transition: transform .18s ease;
 }
-.carte--ouverte .carte__chevron { transform: rotate(180deg); }
+.carte--ouverte svg.carte__chevron { transform: rotate(180deg); }
 
 .carte__corps { margin-top: .9rem; }
 .carte--repliee .carte__corps { display: none; }
@@ -437,7 +443,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   border: 1px dashed var(--bord);
   border-radius: var(--rayon);
 }
-.vide__icone { display: block; margin: 0 auto .7rem; color: var(--accent); opacity: .45; }
+svg.vide__icone { display: block; margin: 0 auto .7rem; color: var(--accent); opacity: .45; }
 .vide__titre { font-size: 1.05rem; font-weight: 660; margin-bottom: .4rem; }
 .vide__texte { font-size: .88rem; color: var(--texte-doux); max-width: 46ch; margin: 0 auto 1.1rem; }
 
