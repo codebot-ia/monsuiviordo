@@ -141,6 +141,9 @@
 
     <dialog id="dialogue-scan" class="dialogue dialogue--scan" aria-labelledby="titre-scan">
       <div class="formulaire">
+        <button type="button" class="dialogue__fermer" data-fermer aria-label="Fermer">
+          <icone-tabler nom="fermer" taille="20"></icone-tabler>
+        </button>
         <h2 id="titre-scan" class="dialogue__titre">
           <icone-tabler nom="appareil-photo" taille="20"></icone-tabler>
           <span class="dialogue__titre-texte">Scanner l'ordonnance</span>
@@ -163,7 +166,6 @@
             <icone-tabler nom="lampe" taille="16"></icone-tabler>
             <span class="bouton__libelle">Torche</span>
           </button>
-          <bouton-action icone="fermer" variante="discret" libelle="Annuler" data-fermer></bouton-action>
           <bouton-action id="bouton-prendre" icone="appareil-photo" variante="principal"
                          libelle="Prendre la photo"></bouton-action>
         </div>
@@ -172,6 +174,9 @@
 
     <dialog id="dialogue-cadrage" class="dialogue dialogue--large" aria-labelledby="titre-cadrage">
       <div class="formulaire">
+        <button type="button" class="dialogue__fermer" data-fermer aria-label="Fermer">
+          <icone-tabler nom="fermer" taille="20"></icone-tabler>
+        </button>
         <h2 id="titre-cadrage" class="dialogue__titre">
           <icone-tabler nom="viseur" taille="20"></icone-tabler>
           <span class="dialogue__titre-texte">Cadrer la zone à lire</span>
@@ -192,10 +197,9 @@
         </div>
         <p id="etat-cadrage" class="scan__etat scan__etat--fixe" aria-live="polite"></p>
         <div class="dialogue__actions dialogue__actions--multi">
-          <bouton-action id="bouton-cadrage-entier" icone="plein-ecran" variante="lien" libelle="Toute l'image"></bouton-action>
           <bouton-action id="bouton-reprendre" icone="appareil-photo" variante="discret" libelle="Reprendre"></bouton-action>
-          <bouton-action icone="fermer" variante="discret" libelle="Annuler" data-fermer></bouton-action>
           <bouton-action id="bouton-analyser" icone="scanner" variante="principal" libelle="Lire cette zone"></bouton-action>
+          <bouton-action id="bouton-cadrage-entier" icone="plein-ecran" variante="lien" libelle="Toute l'image"></bouton-action>
         </div>
       </div>
     </dialog>

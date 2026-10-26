@@ -469,7 +469,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 }
 .dialogue::backdrop { background: rgba(9, 20, 28, .45); backdrop-filter: blur(3px); }
 
-.formulaire { padding: clamp(1.1rem, 4vw, 1.5rem); display: grid; gap: .85rem; }
+.formulaire { position: relative; padding: clamp(1.1rem, 4vw, 1.5rem); display: grid; gap: .85rem; }
 .dialogue__titre {
   display: flex;
   align-items: center;
@@ -479,6 +479,27 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   letter-spacing: -.01em;
 }
 .dialogue__titre .icone { color: var(--accent); }
+
+/* Fermeture : croix discrète en haut à droite, cible tactile de 44 px. */
+.dialogue__fermer {
+  position: absolute;
+  top: .35rem;
+  right: .35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--texte-doux);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.dialogue__fermer:hover { background: var(--surface-douce); color: var(--texte); }
+.dialogue__fermer:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .champ { display: grid; gap: .3rem; }
 .champ__aide { font-size: .72rem; color: var(--texte-doux); }
@@ -882,26 +903,32 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .carte__actions { gap: .25rem; }
   .carte__actions .bouton--petit { padding: .28rem .4rem; font-size: .69rem; }
   .carte__actions .bouton { gap: .22rem; }
-  .carte__actions .bouton .icone { width: 13px; height: 13px; }
 
   /*
-   * Rangées d'actions : grille régulière plutôt qu'un retour à la ligne qui
-   * laisse un bouton orphelin. Chaque case fait la même largeur et le libellé
-   * tient sur une ligne.
+   * Rangées d'actions : une seule ligne, cases de largeur égale qui occupent
+   * tout l'espace, icône au-dessus du libellé pour que rien ne soit tronqué.
    */
   .carte__actions,
   .medicament__actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .3rem;
   }
+  .carte__actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .medicament__actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .carte__actions > .bouton,
   .carte__actions > bouton-action > .bouton,
   .medicament__actions > .bouton,
   .medicament__actions > bouton-action > .bouton { width: 100%; }
-  /* Premier bouton (Début / Annuler) sur toute la largeur : 3 actions = 1 + 2. */
-  .medicament__actions > :first-child > .bouton,
-  .medicament__actions > .bouton:first-child { grid-column: 1 / -1; }
+  .carte__actions .bouton,
+  .medicament__actions .bouton {
+    flex-direction: column;
+    gap: .12rem;
+    padding: .36rem .18rem;
+    font-size: .64rem;
+    line-height: 1.15;
+  }
+  .carte__actions .bouton .icone,
+  .medicament__actions .bouton .icone { width: 16px; height: 16px; }
 
   /* Dialogues : une action par ligne, pleine largeur (style feuille du bas). */
   .dialogue__actions {
@@ -912,9 +939,8 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .dialogue__actions > .bouton,
   .dialogue__actions > bouton-action > .bouton { width: 100%; }
 
-  /* Quatre actions : deux colonnes, l'action principale sur toute la largeur. */
+  /* Scan : deux actions côte à côte (la fermeture est une croix en haut à droite). */
   .dialogue__actions--multi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dialogue__actions--multi .bouton--principal,
   .dialogue__actions--multi .bouton--lien { grid-column: 1 / -1; }
 
   .medicament { padding: .65rem .7rem; border-radius: 10px; }
