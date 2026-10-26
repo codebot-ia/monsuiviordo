@@ -345,7 +345,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
 
 /* Un libellé de bouton ne passe jamais sur deux lignes : c'est la rangée de
    boutons qui se replie (les icônes restent alignées sur une seule ligne). */
-.bouton__libelle { white-space: nowrap; }
+.bouton__libelle { white-space: nowrap; min-width: 0; }
 .bouton .icone { align-self: center; }
 
 .bouton--principal {
@@ -892,7 +892,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .carte__actions,
   .medicament__actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .3rem;
   }
   .carte__actions > .bouton,
@@ -913,7 +913,7 @@ body.glisser-en-cours .carte:not(.carte--glissee) { opacity: .65; }
   .dialogue__actions > bouton-action > .bouton { width: 100%; }
 
   /* Quatre actions : deux colonnes, l'action principale sur toute la largeur. */
-  .dialogue__actions--multi { grid-template-columns: 1fr 1fr; }
+  .dialogue__actions--multi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dialogue__actions--multi .bouton--principal,
   .dialogue__actions--multi .bouton--lien { grid-column: 1 / -1; }
 
