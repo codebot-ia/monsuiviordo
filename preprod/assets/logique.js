@@ -162,7 +162,7 @@ const MOTIF_DOSAGE_EN_MOTS = /\b(?:un|une|deux|trois|quatre|cinq|six|sept|huit|n
 const MOTIF_MESURE = /\d\s*(?:mm|cm)|\d\s*[*x×]\s*\d/i;
 // Ligne de conditionnement seule : « 1 flacon », « 1 boîte de 10 » (et non
 // « 1 sachet le soir », qui est une posologie).
-const MOTIF_CONDITIONNEMENT = /^[\s|"']*\d+\s*(?:bo[iî]tes?|flacons?|tubes?|rouleaux?|sachets?|ampoules?|plaquettes?)[\s-]*?(?:de\s+\d+\s*)?$/i;
+const MOTIF_CONDITIONNEMENT = /^[\s|"'\u201c\u201d\u201e\u00ab\u00bb]*\d+\s*(?:bo[iî]tes?|flacons?|tubes?|rouleaux?|sachets?|ampoules?|plaquettes?)[\s-]*?(?:de\s+\d+\s*)?$/i;
 // Consigne administrative sans intérêt pour la posologie.
 const MOTIF_CONSIGNE = /^[\s"'|-]*(?:[àa]\s*(?:d[ée]livrer|renouveler)|[àa]\s+renouveler|renouveler|nombre\s+de\s+produits)\b/i;
 
@@ -195,6 +195,8 @@ function estNomDeMedicament(ligne, suivante) {
   // en fin de ligne ne doivent pas faire passer un médicament pour du bruit.
   const t = nettoyerNom(ligne);
   if (t.length < 3 || t.length > 120) return false;
+  // Un conditionnement seul (« tube », « flacon ») n'est jamais un médicament.
+  if (/^(?:tubes?|flacons?|bo[iî]tes?|rouleaux?|sachets?|ampoules?|plaquettes?)$/i.test(t)) return false;
   if (MOTIF_BRUIT.test(t)) return false;
   if (estLignePosologie(t)) return false;
   // Un nom commence par un mot de lettres : écarte les codes-barres, les
@@ -232,6 +234,9 @@ function nettoyerNom(nom) {
     .replace(/^[^A-Za-zÀ-ÿ0-9]+/, "")
     .replace(/,\s*(?:bo[iî]tes?|flacons?|tubes?|plaquettes?|sachets?|g[ée]lules?|comprim[ée]s?|poudre|solution|dispositif|sirop|cr[eè]mes?|pommades?|collyres?)(?=[\s,]|$).*$/i, "")
     .replace(/[\s|\\"'\u2018\u2019\u201A\u201B`]+$/, "")
+    // Ponctuation et artefacts laissés en fin de ligne par l'OCR
+    // (« ANXEMIL 200MG CPR 98 ,  ; »).
+    .replace(/[\s,;:.!?|]+$/, "")
     .replace(/\s{2,}/g, " ")
     .trim()
     .slice(0, 90);
@@ -328,6 +333,9 @@ export function extraireOrdonnance(texte) {
 
   const lignes = contenu
     .split("\n")
+    // Colonnes d'un même en-tête (« ANXEMIL … 98                    ,     ; ») :
+    // au-delà de trois espaces, ce qui suit appartient à une autre colonne.
+    .map((ligne) => ligne.replace(/\s{3,}.*$/, "").trim())
     .map((ligne) => ligne.replace(/\s+/g, " ").trim())
     // « … pendant 1 mois        À renouveler 2 fois » : la consigne est en fin
     // de ligne, elle ne fait pas partie de la posologie.

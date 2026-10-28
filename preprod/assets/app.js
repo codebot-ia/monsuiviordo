@@ -1028,4 +1028,12 @@ document.addEventListener("focusin", (evenement) => {
   }, 280);
 });
 
+// Préprod : le même code est publié dans /preprod/ du site. Sans repère visuel,
+// impossible de savoir quel build on a sous les yeux quand une nouveauté manque.
+{
+  const pied = document.getElementById("version-pied");
+  const preprod = document.getElementById("mention-preprod");
+  if (pied && preprod && window.location.pathname.includes("/preprod")) preprod.hidden = false;
+}
+
 rendre();
