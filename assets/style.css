@@ -457,6 +457,9 @@ svg.vide__icone { display: block; margin: 0 auto .7rem; color: var(--accent); op
 }
 .pied__actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 .pied__note { margin-top: .5rem; font-size: .76rem; color: var(--texte-doux); max-width: 60ch; }
+/* Version affichée : permet de vérifier d'un coup d'œil quel build tourne
+   (prod ou préprod) quand une nouveauté semble absente. */
+.pied__version { margin-top: .6rem; font-size: .72rem; color: var(--texte-doux); opacity: .8; }
 
 /* ---------- Dialogues ---------- */
 
