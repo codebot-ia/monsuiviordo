@@ -5,7 +5,7 @@ const RACINE = new URL("./", self.location).pathname;
 // caches doivent donc être préfixés par le périmètre, sinon les deux versions
 // se marcheraient dessus.
 const PERIMETRE = RACINE.replace(/^\/+/, "").replace(/\/+$/, "").replace(/\//g, "-");
-const BASE_CACHE = "monsuiviordo-v1.13.1";
+const BASE_CACHE = "monsuiviordo-v1.13.2";
 // Préfixe des caches de CE périmètre : la prod (« monsuiviordo-v… ») ne touche
 // jamais aux caches de la préprod (« monsuiviordo-preprod@monsuiviordo-v… »).
 const PREFIXE_CACHE = PERIMETRE ? `${PERIMETRE}@monsuiviordo-v` : "monsuiviordo-v";
@@ -29,12 +29,22 @@ const FICHIERS_APPLICATION = [
 ];
 
 self.addEventListener("install", (evenement) => {
+  // « cache: reload » : le pré-cache doit lire le réseau, pas la copie HTTP que
+  // le navigateur garde quelques minutes — sinon une mise en ligne récente est
+  // figée dans le cache du service worker dès l'installation.
   evenement.waitUntil(
     caches
       .open(VERSION)
-      .then((cache) => cache.addAll(FICHIERS_APPLICATION))
+      .then((cache) =>
+        Promise.all(
+          FICHIERS_APPLICATION.map((fichier) =>
+            fetch(new URL(fichier, self.location).href, { cache: "reload" })
+              .then((reponse) => (reponse && reponse.ok ? cache.put(fichier, reponse) : null))
+              .catch((erreur) => console.warn("Pré-cache incomplet :", fichier, erreur))
+          )
+        )
+      )
       .then(() => self.skipWaiting())
-      .catch((erreur) => console.warn("Pré-cache incomplet", erreur))
   );
 });
 
@@ -98,19 +108,35 @@ self.addEventListener("fetch", (evenement) => {
     return;
   }
 
-  // Ressources locales : cache immédiat, mise à jour en arrière-plan
-  // (l'utilisateur voit la version en cache, le réseau rafraîchit pour la visite suivante).
+  // Moteur OCR (plusieurs mégaoctets, jamais modifié entre deux versions) :
+  // cache d'abord.
+  if (/\/assets\/ocr\//.test(url.pathname)) {
+    evenement.respondWith(
+      caches.match(requete).then(
+        (enCache) =>
+          enCache ||
+          fetch(requete).then((reponse) => {
+            const copie = reponse.clone();
+            caches.open(VERSION).then((cache) => cache.put(requete, copie));
+            return reponse;
+          })
+      )
+    );
+    return;
+  }
+
+  // Reste de l'application (HTML, JS, CSS, manifeste) : réseau d'abord, sans
+  // passer par le cache HTTP du navigateur — une mise en ligne est ainsi visible
+  // au rechargement suivant, même quand un module importé n'a pas de « ?v= ».
+  // Le cache ne sert qu'en secours, hors ligne.
   evenement.respondWith(
-    caches.match(requete).then((enCache) => {
-      const depuisReseau = fetch(requete)
-        .then((reponse) => {
-          const copie = reponse.clone();
-          caches.open(VERSION).then((cache) => cache.put(requete, copie));
-          return reponse;
-        })
-        .catch(() => enCache);
-      return enCache || depuisReseau;
-    })
+    fetch(requete, { cache: "no-store" })
+      .then((reponse) => {
+        const copie = reponse.clone();
+        caches.open(VERSION).then((cache) => cache.put(requete, copie));
+        return reponse;
+      })
+      .catch(() => caches.match(requete).then((enCache) => enCache || Response.error()))
   );
 });
 
