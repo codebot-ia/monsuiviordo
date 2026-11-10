@@ -498,12 +498,12 @@ svg.carte__chevron {
    filet. La durée d'un traitement se lit comme une bande de plaquette. */
 .jours {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--e1);
   margin-top: var(--e3);
 }
 .jours__case {
-  width: 10px;
+  flex: 1 1 0;
+  min-width: 0;
   height: 10px;
   border: 1px solid var(--filet-fort);
   border-radius: 2px;
