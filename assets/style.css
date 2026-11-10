@@ -1029,7 +1029,11 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 }
 
 @media print {
-  :root {
+  /* Le papier reste clair même quand l'écran est en thème sombre : le sélecteur
+     porte la même spécificité que :root[data-theme="sombre"] et vient après lui. */
+  :root,
+  :root[data-theme="clair"],
+  :root[data-theme="sombre"] {
     color-scheme: light;
     --papier: #ffffff;
     --surface: #ffffff;
@@ -1041,6 +1045,8 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
     --accent: #0f766e;
     --accent-encre: #0b5a54;
     --accent-doux: #eef5f4;
+    --principal-fond: #0f766e;
+    --principal-texte: #ffffff;
     --ok: #0a7c53;
     --attente: #8a6512;
     --filet: #d9dedb;

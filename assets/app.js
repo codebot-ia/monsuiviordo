@@ -294,7 +294,7 @@ function construireLigneMedicament(medicament, aujourdHui) {
   const duree = `${medicament.dureeJours} jour${medicament.dureeJours > 1 ? "s" : ""}`;
   const dates = medicament.debut && fin
     ? `<span class="medicament__plage">Du ${formaterDate(medicament.debut)} au ${formaterDate(fin)}</span>\u00a0·\u00a0<span class="medicament__duree">${duree}</span>`
-    : `<span class="ecran-seul">Durée prévue : </span><span class="medicament__duree">${duree}</span><span class="ecran-seul">\u00a0·\u00a0pas encore démarré</span>`;
+    : `Durée prévue : <span class="medicament__duree">${duree}</span><span class="ecran-seul">\u00a0·\u00a0pas encore démarré</span>`;
   const boutonDebut = medicament.debut
     ? `<bouton-action icone="annuler" variante="petit" action="annuler-debut" libelle="Annuler"></bouton-action>`
     : `<bouton-action icone="demarrer" variante="petit principal" action="demarrer" libelle="Début"></bouton-action>`;
