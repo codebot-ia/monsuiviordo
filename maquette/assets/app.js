@@ -263,19 +263,27 @@ function construireCarte(maladie, aujourdHui) {
 }
 
 /**
- * Règle des jours : une graduation par jour (par semaine au-delà de deux
- * semaines), remplie jusqu'à aujourd'hui, avec le repère du jour en cours.
- * La durée d'un traitement se lit comme une bande de plaquette.
+ * Plaquette des jours : une case par jour jusqu'à deux semaines, puis quatorze
+ * cases (une par fraction égale du traitement) pour les durées longues. Les
+ * jours passés sont pleins, la case d'aujourd'hui est teintée, les autres
+ * restent au filet. Une durée se lit comme une bande de plaquette.
  */
-function regleDesJours(medicament, aujourdHui, statut) {
+function plaquetteDesJours(medicament, aujourdHui, statut) {
   const duree = Number(medicament.dureeJours) || 0;
   const fin = finMedicament(medicament);
   if (!medicament.debut || !fin || !duree) return "";
-  const ecoules = Math.min(duree, Math.max(0, duree - joursRestants(fin, aujourdHui)));
-  const progression = ((ecoules / duree) * 100).toFixed(2);
-  const divisions = duree <= 14 ? duree : Math.min(13, Math.ceil(duree / 7));
-  const pas = (100 / divisions).toFixed(3);
-  return `<div class="jours jours--${statut}" style="--pas:${pas}%;--progression:${progression}%" aria-hidden="true"><span class="jours__garni"></span><span class="jours__cran"></span></div>`;
+  const restants = joursRestants(fin, aujourdHui);
+  const ecoules = Math.min(duree, Math.max(0, duree - restants));
+  const cases = Math.min(14, duree);
+  const parCase = duree / cases;
+  let contenu = "";
+  for (let index = 0; index < cases; index += 1) {
+    const debut = index * parCase;
+    const finCase = debut + parCase;
+    const etat = finCase <= ecoules ? "faite" : debut >= ecoules ? "a-venir" : "encours";
+    contenu += `<span class="jours__case jours__case--${etat}"></span>`;
+  }
+  return `<div class="jours jours--${statut}" aria-hidden="true">${contenu}</div>`;
 }
 
 function construireLigneMedicament(medicament, aujourdHui) {
@@ -309,7 +317,7 @@ function construireLigneMedicament(medicament, aujourdHui) {
         </div>
         ${compte}
       </div>
-      ${regleDesJours(medicament, aujourdHui, statut)}
+      ${plaquetteDesJours(medicament, aujourdHui, statut)}
       <div class="medicament__actions">
         ${boutonDebut}
         <bouton-action icone="crayon" variante="petit" action="modifier-medicament" libelle="Modifier"></bouton-action>

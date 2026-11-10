@@ -493,46 +493,33 @@ svg.carte__chevron {
 }
 .medicament--fini .compte__nombre { color: var(--texte-muet); }
 
-/* Règle des jours : une graduation par jour (ou par semaine si le traitement
-   est long), remplie jusqu'à aujourd'hui. C'est la signature de l'application :
-   la durée d'un traitement se lit comme une bande de plaquette. */
+/* Plaquette des jours : une case par jour (une par quatorzième au-delà de deux
+   semaines), les jours passés pleins, celui d'aujourd'hui teinté, les autres au
+   filet. La durée d'un traitement se lit comme une bande de plaquette. */
 .jours {
-  position: relative;
-  height: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1);
   margin-top: var(--e3);
 }
-.jours::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 6px;
-  background-image: repeating-linear-gradient(
-    to right,
-    var(--filet-fort) 0 1px,
-    transparent 1px var(--pas)
-  );
-}
-.jours__garni {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: var(--progression);
-  height: 2px;
-  background: var(--accent);
-  border-radius: 1px;
-}
-.jours__cran {
-  position: absolute;
-  bottom: -2px;
-  left: var(--progression);
-  width: 1px;
+.jours__case {
+  width: 10px;
   height: 10px;
-  background: var(--accent);
+  border: 1px solid var(--filet-fort);
+  border-radius: 2px;
 }
-.jours--termine .jours__garni,
-.jours--termine .jours__cran { background: var(--texte-muet); }
+.jours__case--faite {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.jours__case--encours {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  border-color: var(--accent);
+}
+.jours--termine .jours__case--faite {
+  background: var(--texte-muet);
+  border-color: var(--texte-muet);
+}
 
 .medicament__actions {
   display: flex;
@@ -740,7 +727,11 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   color: var(--texte);
   box-shadow: 0 24px 48px -24px rgba(9, 20, 18, 0.45);
 }
-.dialogue::backdrop { background: rgba(9, 18, 16, 0.4); }
+.dialogue::backdrop {
+  background: rgba(9, 18, 16, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
 
 .formulaire {
   position: relative;
@@ -1093,6 +1084,7 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .medicament__actions,
   .jours,
   .medicament__compte,
+  .ecran-seul,
   .lien-evitement { display: none !important; }
 
   .contenu { padding: 0; max-width: none; }
