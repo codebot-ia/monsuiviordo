@@ -153,8 +153,6 @@ class BoutonAction extends Composant {
 
 /* --------------------------------------------------------------- pastille */
 
-const ICONES_STATUT = { attente: "attente", "en-cours": "en-cours", termine: "termine" };
-
 class PastilleStatut extends Composant {
   static observedAttributes = ["statut"];
 
@@ -174,13 +172,11 @@ class PastilleStatut extends Composant {
     const pastille = document.createElement("span");
     pastille.className = ["pastille", `pastille--${statut}`, this.className || ""].filter(Boolean).join(" ");
 
-    const nomIcone = ICONES_STATUT[statut];
-    if (nomIcone) {
-      const dessin = document.createElement("icone-tabler");
-      dessin.setAttribute("nom", nomIcone);
-      dessin.setAttribute("taille", "13");
-      pastille.appendChild(dessin);
-    }
+    // Un point de couleur porte l'état : pas de fond teinté, pas d'icône en plus.
+    const point = document.createElement("span");
+    point.className = "pastille__point";
+    point.setAttribute("aria-hidden", "true");
+    pastille.appendChild(point);
 
     const texte = document.createElement("span");
     texte.className = "pastille__texte";

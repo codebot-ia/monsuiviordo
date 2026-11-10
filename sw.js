@@ -5,7 +5,7 @@ const RACINE = new URL("./", self.location).pathname;
 // caches doivent donc être préfixés par le périmètre, sinon les deux versions
 // se marcheraient dessus.
 const PERIMETRE = RACINE.replace(/^\/+/, "").replace(/\/+$/, "").replace(/\//g, "-");
-const BASE_CACHE = "monsuiviordo-v1.13.2";
+const BASE_CACHE = "monsuiviordo-v1.14.2";
 // Préfixe des caches de CE périmètre : la prod (« monsuiviordo-v… ») ne touche
 // jamais aux caches de la préprod (« monsuiviordo-preprod@monsuiviordo-v… »).
 const PREFIXE_CACHE = PERIMETRE ? `${PERIMETRE}@monsuiviordo-v` : "monsuiviordo-v";
@@ -22,6 +22,10 @@ const FICHIERS_APPLICATION = [
   "./assets/traitement-image.js",
   "./assets/scan.js",
   "./assets/cadrage.js",
+  "./assets/polices/plex-sans-400.woff2",
+  "./assets/polices/plex-sans-500.woff2",
+  "./assets/polices/plex-sans-600.woff2",
+  "./assets/polices/plex-mono-400.woff2",
   "./assets/icone-192.png",
   "./assets/icone-512.png",
   "./assets/ocr/tesseract.min.js",

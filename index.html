@@ -11,7 +11,26 @@
     <link rel="apple-touch-icon" href="./assets/icone-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MonSuiviOrdo">
-    <link rel="stylesheet" href="./assets/style.css?v=1.13.2">
+    <!-- Apparence appliquée avant le premier rendu : pas de flash de thème. -->
+    <script>
+      (function () {
+        var CLE = "monsuiviordo.apparence";
+        var choix = "auto";
+        try { choix = window.localStorage.getItem(CLE) || "auto"; } catch (e) {}
+        var sombre = window.matchMedia("(prefers-color-scheme: dark)");
+        function appliquer() {
+          var mode = choix === "auto" ? (sombre.matches ? "sombre" : "clair") : choix;
+          document.documentElement.dataset.theme = mode;
+          document.documentElement.dataset.apparence = choix;
+        }
+        window.__apparence = { lire: function () { return choix; } };
+        appliquer();
+        if (sombre.addEventListener) sombre.addEventListener("change", function () { if (choix === "auto") appliquer(); });
+      })();
+    </script>
+    <link rel="preload" href="./assets/polices/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="./assets/polices/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="./assets/style.css?v=1.14.2">
   </head>
   <body>
     <svg xmlns="http://www.w3.org/2000/svg" class="sprite-icones" aria-hidden="true" focusable="false">
@@ -44,35 +63,47 @@
   <symbol id="ico-viseur" viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> <path d="M16 16l-2.5 -2.5" /> <path d="M3 7v-2a2 2 0 0 1 2 -2h2" /> <path d="M3 17v2a2 2 0 0 0 2 2h2" /> <path d="M17 3h2a2 2 0 0 1 2 2v2" /> <path d="M17 21h2a2 2 0 0 0 2 -2v-2" /></symbol>
   <symbol id="ico-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6" /></symbol>
   <symbol id="ico-poignee" viewBox="0 0 24 24"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></symbol>
+  <symbol id="ico-soleil" viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /> <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" /></symbol>
+  <symbol id="ico-lune" viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" /></symbol>
 </svg>
 
 
     <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
     <header class="entete">
-      <div class="entete__contenu">
-        <div class="entete__marque">
-          <img class="entete__logo" src="./assets/icone-192.png" alt="" width="40" height="40">
-          <div>
-            <h1 class="entete__titre">MonSuiviOrdo</h1>
-            <p class="entete__sous-titre">Vos traitements, rien que sur cet appareil</p>
-          </div>
-        </div>
-        <div class="entete__actions">
-          <bouton-action id="bouton-installer" icone="installer" variante="discret" libelle="Installer" hidden></bouton-action>
-          <bouton-action id="bouton-imprimer-tout" icone="imprimer" variante="discret" libelle="Imprimer tout"></bouton-action>
-          <bouton-action id="bouton-nouvelle-maladie" icone="plus" variante="principal" libelle="Nouvelle maladie"></bouton-action>
+      <div class="entete__marque">
+        <img class="entete__logo" src="./assets/icone-192.png" alt="" width="34" height="34">
+        <div>
+          <h1 class="entete__titre">MonSuiviOrdo</h1>
+          <p class="entete__sous-titre">Vos traitements, rien que sur cet appareil</p>
         </div>
       </div>
+
+      <div class="entete__actions">
+        <bouton-action id="bouton-nouvelle-maladie" icone="plus" variante="principal" libelle="Nouvelle maladie"></bouton-action>
+        <bouton-action id="bouton-imprimer-tout" icone="imprimer" variante="discret" libelle="Imprimer tout"></bouton-action>
+        <bouton-action id="bouton-installer" icone="installer" variante="discret" libelle="Installer" hidden></bouton-action>
+      </div>
+
+      <div class="entete__bas">
+        <button type="button" id="bouton-apparence" class="bouton bouton--icone" aria-label="Apparence : système" title="Apparence : système">
+          <icone-tabler nom="soleil" taille="16"></icone-tabler>
+        </button>
+      </div>
+
       <p class="impression-titre">Récapitulatif des traitements<span id="impression-date"></span></p>
     </header>
 
     <main id="contenu" class="contenu">
-      <p id="resume" class="resume" aria-live="polite"></p>
+      <div class="contenu__entete">
+        <h2 class="contenu__titre">Traitements</h2>
+        <p id="resume" class="resume" aria-live="polite"></p>
+      </div>
+
       <section id="liste" class="liste" aria-label="Maladies suivies"></section>
 
       <div id="vide" class="vide" hidden>
-        <icone-tabler class="vide__icone" nom="vide" taille="44"></icone-tabler>
+        <icone-tabler class="vide__icone" nom="vide" taille="40"></icone-tabler>
         <p class="vide__titre">Aucune maladie suivie</p>
         <p class="vide__texte">
           Ajoutez une maladie (rhume, angine, gastro…), puis ses médicaments avec leur posologie
@@ -93,13 +124,13 @@
         Aucune donnée ne quitte cet appareil : pas de compte, pas de serveur. Pensez à sauvegarder
         régulièrement, un nettoyage du navigateur efface le stockage local.
       </p>
-      <p class="pied__version" id="version-pied">Version 1.13.2<span id="mention-preprod" hidden> · préprod</span></p>
+      <p class="pied__version" id="version-pied">Version 1.14.2<span id="mention-preprod" hidden></span></p>
     </footer>
 
     <dialog id="dialogue-maladie" class="dialogue" aria-labelledby="titre-dialogue-maladie">
       <form id="formulaire-maladie" class="formulaire">
         <h2 id="titre-dialogue-maladie" class="dialogue__titre">
-          <icone-tabler nom="ordonnance" taille="20"></icone-tabler>
+          <icone-tabler nom="ordonnance" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Nouvelle maladie</span>
         </h2>
         <champ-formulaire libelle="Nom de la maladie" nom="nom" type="text" requis maxlength="80"
@@ -114,7 +145,7 @@
     <dialog id="dialogue-medicament" class="dialogue" aria-labelledby="titre-dialogue-medicament">
       <form id="formulaire-medicament" class="formulaire">
         <h2 id="titre-dialogue-medicament" class="dialogue__titre">
-          <icone-tabler nom="pilule" taille="20"></icone-tabler>
+          <icone-tabler nom="pilule" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Nouveau médicament</span>
         </h2>
 
@@ -143,10 +174,10 @@
     <dialog id="dialogue-scan" class="dialogue dialogue--scan" aria-labelledby="titre-scan">
       <div class="formulaire">
         <button type="button" class="dialogue__fermer" data-fermer aria-label="Fermer">
-          <icone-tabler nom="fermer" taille="20"></icone-tabler>
+          <icone-tabler nom="fermer" taille="18"></icone-tabler>
         </button>
         <h2 id="titre-scan" class="dialogue__titre">
-          <icone-tabler nom="appareil-photo" taille="20"></icone-tabler>
+          <icone-tabler nom="appareil-photo" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Scanner l'ordonnance</span>
         </h2>
         <p class="dialogue__message">
@@ -176,10 +207,10 @@
     <dialog id="dialogue-cadrage" class="dialogue dialogue--large" aria-labelledby="titre-cadrage">
       <div class="formulaire">
         <button type="button" class="dialogue__fermer" data-fermer aria-label="Fermer">
-          <icone-tabler nom="fermer" taille="20"></icone-tabler>
+          <icone-tabler nom="fermer" taille="18"></icone-tabler>
         </button>
         <h2 id="titre-cadrage" class="dialogue__titre">
-          <icone-tabler nom="viseur" taille="20"></icone-tabler>
+          <icone-tabler nom="viseur" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Cadrer la zone à lire</span>
         </h2>
         <p class="dialogue__message">
@@ -208,7 +239,7 @@
     <dialog id="dialogue-analyse" class="dialogue dialogue--large" aria-labelledby="titre-analyse">
       <form id="formulaire-analyse" class="formulaire">
         <h2 id="titre-analyse" class="dialogue__titre">
-          <icone-tabler nom="ordonnance" taille="20"></icone-tabler>
+          <icone-tabler nom="ordonnance" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Médicaments détectés</span>
         </h2>
         <p class="dialogue__message">
@@ -233,7 +264,7 @@
     <dialog id="dialogue-confirmation" class="dialogue" aria-labelledby="titre-confirmation">
       <form method="dialog" class="formulaire">
         <h2 id="titre-confirmation" class="dialogue__titre">
-          <icone-tabler nom="alerte" taille="20"></icone-tabler>
+          <icone-tabler nom="alerte" taille="18"></icone-tabler>
           <span class="dialogue__titre-texte">Confirmer</span>
         </h2>
         <p id="message-confirmation" class="dialogue__message"></p>
@@ -246,6 +277,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.13.2"></script>
+    <script type="module" src="./assets/app.js?v=1.14.2"></script>
   </body>
 </html>

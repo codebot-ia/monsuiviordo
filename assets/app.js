@@ -46,6 +46,7 @@ const elements = {
   boutonImporter: document.getElementById("bouton-importer"),
   champImport: document.getElementById("champ-import"),
   boutonInstaller: document.getElementById("bouton-installer"),
+  boutonApparence: document.getElementById("bouton-apparence"),
   dialogueMaladie: document.getElementById("dialogue-maladie"),
   formulaireMaladie: document.getElementById("formulaire-maladie"),
   dialogueMedicament: document.getElementById("dialogue-medicament"),
@@ -240,14 +241,14 @@ function construireCarte(maladie, aujourdHui) {
             <span class="carte__titre">${echapper(maladie.nom)}</span>
             <span class="carte__sous-titre">${texteSousTitre(maladie, aujourdHui)}</span>
           </span>
-          ${nombre ? `<span class="carte__compte" aria-hidden="true">${nombre}</span>` : ""}
-          <icone-tabler class="carte__poignee" nom="poignee" taille="17"></icone-tabler>
-          <icone-tabler class="carte__chevron" nom="chevron" taille="17"></icone-tabler>
+          ${nombre ? `<span class="carte__compte" aria-hidden="true"><icone-tabler nom="pilule" taille="13"></icone-tabler>${nombre}</span>` : ""}
+          <icone-tabler class="carte__poignee" nom="poignee" taille="16"></icone-tabler>
+          <icone-tabler class="carte__chevron" nom="chevron" taille="16"></icone-tabler>
         </button>
       </h2>
     </header>
     <div class="carte__corps" id="corps-${maladie.id}">
-      <div class="carte__actions">
+      <div class="carte__barre">
         <bouton-action icone="plus" variante="petit" action="ajouter-medicament" libelle="Médicament"></bouton-action>
         <bouton-action icone="scanner" variante="petit" action="scanner-ordonnance" libelle="Scanner"></bouton-action>
         <bouton-action icone="imprimer" variante="petit" action="imprimer-carte" libelle="Imprimer"></bouton-action>
@@ -261,28 +262,62 @@ function construireCarte(maladie, aujourdHui) {
   return article;
 }
 
+/**
+ * Plaquette des jours : une case par jour jusqu'à deux semaines, puis quatorze
+ * cases (une par fraction égale du traitement) pour les durées longues. Les
+ * jours passés sont pleins, la case d'aujourd'hui est teintée, les autres
+ * restent au filet. Une durée se lit comme une bande de plaquette.
+ */
+function plaquetteDesJours(medicament, aujourdHui, statut) {
+  const duree = Number(medicament.dureeJours) || 0;
+  const fin = finMedicament(medicament);
+  if (!medicament.debut || !fin || !duree) return "";
+  const restants = joursRestants(fin, aujourdHui);
+  const ecoules = Math.min(duree, Math.max(0, duree - restants));
+  const cases = Math.min(14, duree);
+  const parCase = duree / cases;
+  let contenu = "";
+  for (let index = 0; index < cases; index += 1) {
+    const debut = index * parCase;
+    const finCase = debut + parCase;
+    const etat = finCase <= ecoules ? "faite" : debut >= ecoules ? "a-venir" : "encours";
+    contenu += `<span class="jours__case jours__case--${etat}"></span>`;
+  }
+  return `<div class="jours jours--${statut}" aria-hidden="true">${contenu}</div>`;
+}
+
 function construireLigneMedicament(medicament, aujourdHui) {
   const fin = finMedicament(medicament);
   const statut = etatMedicament(medicament, aujourdHui);
   const restants = joursRestants(fin, aujourdHui);
   const libelles = { attente: "En attente", "en-cours": "En cours", termine: "Terminé" };
-  const detail = statut === "en-cours" ? ` · ${libelleJours(restants)}` : "";
   const duree = `${medicament.dureeJours} jour${medicament.dureeJours > 1 ? "s" : ""}`;
   const dates = medicament.debut && fin
-    ? `Du ${formaterDate(medicament.debut)} au ${formaterDate(fin)} · ${duree}`
-    : `<span class="ecran-seul">Durée prévue : </span>${duree}<span class="ecran-seul"> · pas encore démarré</span>`;
+    ? `<span class="medicament__plage">Du ${formaterDate(medicament.debut)} au ${formaterDate(fin)}</span>\u00a0·\u00a0<span class="medicament__duree">${duree}</span>`
+    : `<span class="ecran-seul">Durée prévue : </span><span class="medicament__duree">${duree}</span><span class="ecran-seul">\u00a0·\u00a0pas encore démarré</span>`;
   const boutonDebut = medicament.debut
     ? `<bouton-action icone="annuler" variante="petit" action="annuler-debut" libelle="Annuler"></bouton-action>`
     : `<bouton-action icone="demarrer" variante="petit principal" action="demarrer" libelle="Début"></bouton-action>`;
+  // Le compte à rebours remplace « reste 3 j » dans la pastille : un chiffre
+  // seul, aligné à droite sur toute la liste, lisible d'un coup d'œil.
+  const compte = statut === "en-cours" && restants
+    ? `<div class="medicament__compte"><span class="compte__nombre">${restants}</span><span class="compte__unite">${restants > 1 ? "jours restants" : "jour restant"}</span></div>`
+    : "";
 
   return `
     <li class="medicament" data-medicament="${medicament.id}">
-      <div class="medicament__ligne">
-        <span class="medicament__nom">${echapper(medicament.nom)}</span>
-        <pastille-statut statut="${statut}">${libelles[statut]}${detail}</pastille-statut>
+      <div class="medicament__tete">
+        <div class="medicament__infos">
+          <div class="medicament__ligne">
+            <span class="medicament__nom">${echapper(medicament.nom)}</span>
+            <pastille-statut statut="${statut}">${libelles[statut]}</pastille-statut>
+          </div>
+          ${medicament.posologie ? `<p class="medicament__posologie">${echapper(medicament.posologie)}</p>` : ""}
+          <p class="medicament__dates">${dates}</p>
+        </div>
+        ${compte}
       </div>
-      ${medicament.posologie ? `<p class="medicament__posologie">${echapper(medicament.posologie)}</p>` : ""}
-      <p class="medicament__dates">${dates}</p>
+      ${plaquetteDesJours(medicament, aujourdHui, statut)}
       <div class="medicament__actions">
         ${boutonDebut}
         <bouton-action icone="crayon" variante="petit" action="modifier-medicament" libelle="Modifier"></bouton-action>
@@ -631,6 +666,52 @@ elements.champImport.addEventListener("change", () => {
   elements.champImport.value = "";
   if (fichier) importer(fichier);
 });
+
+/* --------------------------------------------------------------- apparence */
+/* Trois états : système (par défaut), clair, sombre. Le choix est mémorisé et
+   le thème est posé avant le premier rendu par le script de la page. */
+
+const CLE_APPARENCE = "monsuiviordo.apparence";
+const APPARENCES = ["auto", "clair", "sombre"];
+const LIBELLES_APPARENCE = { auto: "système", clair: "clair", sombre: "sombre" };
+
+function appliquerApparence(choix) {
+  const sombre = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const mode = choix === "auto" ? (sombre ? "sombre" : "clair") : choix;
+  const racine = document.documentElement;
+  racine.dataset.theme = mode;
+  racine.dataset.apparence = choix;
+
+  const bouton = elements.boutonApparence;
+  if (!bouton) return;
+  const nomIcone = mode === "sombre" ? "lune" : "soleil";
+  const dessin = bouton.querySelector("icone-tabler");
+  if (dessin) dessin.setAttribute("nom", nomIcone);
+  const libelle = `Apparence : ${LIBELLES_APPARENCE[choix]}`;
+  bouton.setAttribute("aria-label", libelle);
+  bouton.title = libelle;
+}
+
+function apparenceCourante() {
+  return document.documentElement.dataset.apparence || "auto";
+}
+
+if (elements.boutonApparence) {
+  appliquerApparence(apparenceCourante());
+  elements.boutonApparence.addEventListener("click", () => {
+    const choix = APPARENCES[(APPARENCES.indexOf(apparenceCourante()) + 1) % APPARENCES.length];
+    try {
+      if (choix === "auto") window.localStorage.removeItem(CLE_APPARENCE);
+      else window.localStorage.setItem(CLE_APPARENCE, choix);
+    } catch (erreur) {
+      // Stockage refusé : le choix vaut pour la session en cours.
+    }
+    appliquerApparence(choix);
+  });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (apparenceCourante() === "auto") appliquerApparence("auto");
+  });
+}
 
 document.addEventListener("click", (evenement) => {
   const action = evenement.target.closest("[data-action]");
@@ -1028,12 +1109,20 @@ document.addEventListener("focusin", (evenement) => {
   }, 280);
 });
 
-// Préprod : le même code est publié dans /preprod/ du site. Sans repère visuel,
-// impossible de savoir quel build on a sous les yeux quand une nouveauté manque.
+// Préprod et maquette : le même code est publié dans /preprod/ et /maquette/ du
+// site. Sans repère visuel, impossible de savoir quel build on a sous les yeux.
 {
-  const pied = document.getElementById("version-pied");
-  const preprod = document.getElementById("mention-preprod");
-  if (pied && preprod && window.location.pathname.includes("/preprod")) preprod.hidden = false;
+  const mention = document.getElementById("mention-preprod");
+  if (mention) {
+    const chemin = window.location.pathname;
+    if (chemin.includes("/preprod")) {
+      mention.textContent = " · préprod";
+      mention.hidden = false;
+    } else if (chemin.includes("/maquette")) {
+      mention.textContent = " · maquette";
+      mention.hidden = false;
+    }
+  }
 }
 
 rendre();
