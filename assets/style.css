@@ -395,6 +395,9 @@ svg.carte__chevron {
 
 .carte__corps { padding: 0 var(--e4) var(--e4); }
 .carte--repliee .carte__corps { display: none; }
+/* Repliée, la bascule occupe toute la carte : ses coins bas doivent suivre
+   l'arrondi, sinon le fond de survol (ou d'appui) déborde en angle droit. */
+.carte--repliee .carte__bascule { border-radius: var(--rayon-carte); }
 
 /* Barre d'actions de la maladie : du texte et un trait, pas des boutons bordés. */
 .carte__barre {
