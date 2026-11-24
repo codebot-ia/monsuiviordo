@@ -221,12 +221,13 @@ function rendre() {
   appliquerVue();
 }
 
-/** Bascule entre la liste de suivi et la vue du jour. */
+/** Bascule entre la vue du jour et la liste des traitements. */
 function appliquerVue() {
   const surJour = vue === "jour";
-  elements.liste.hidden = surJour;
-  elements.vueJour.hidden = !surJour;
-  elements.vide.hidden = surJour || etat.maladies.length > 0;
+  const aucunTraitement = etat.maladies.length === 0;
+  elements.liste.hidden = surJour || aucunTraitement;
+  elements.vueJour.hidden = !surJour || aucunTraitement;
+  elements.vide.hidden = !aucunTraitement;
   document.querySelectorAll(".vues__bouton").forEach((bouton) => {
     bouton.setAttribute("aria-selected", String(bouton.dataset.vue === vue));
   });
@@ -280,7 +281,7 @@ function construireCarte(maladie, aujourdHui) {
       </div>
       ${nombre
         ? `<ul class="medicaments">${lignes}</ul>`
-        : `<p class="carte__vide">Ajoutez les médicaments prescrits pour cette maladie.</p>`}
+        : `<p class="carte__vide">Ajoutez les médicaments prescrits pour ce traitement.</p>`}
     </div>
   `;
   return article;
@@ -358,7 +359,7 @@ const JOURS_COURTS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
 const CASES_RUBAN = 7; // jours visibles dans le ruban, le jour affiché au centre
 const JOURS_MEMOIRE = 60; // au-delà, les cases cochées ne servent plus à rien
 
-let vue = "suivi";
+let vue = "jour";
 let jourAffiche = aujourdHuiISO();
 let prisesCochees = chargerPrises();
 
@@ -424,7 +425,7 @@ function rendreJour() {
     vide.className = "jour__vide";
     vide.textContent = etat.maladies.length
       ? "Aucune prise ce jour : aucun médicament démarré ne couvre cette date."
-      : "Ajoutez un traitement et ses médicaments depuis la vue Suivi.";
+      : "Ajoutez un traitement et ses médicaments depuis la vue Traitements.";
     elements.jourCorps.appendChild(vide);
     return;
   }
@@ -519,7 +520,7 @@ function ouvrirDialogueMaladie(idMaladie = null) {
   maladieRenommee = maladie ? maladie.id : null;
   elements.formulaireMaladie.reset();
   const titre = elements.dialogueMaladie.querySelector("#titre-dialogue-maladie");
-  definirTitreDialogue(titre, maladie ? "Modifier la maladie" : "Nouvelle maladie");
+  definirTitreDialogue(titre, maladie ? "Modifier le traitement" : "Nouveau traitement");
   const valider = elements.formulaireMaladie.querySelector('bouton-action[type="submit"]');
   if (valider) valider.setAttribute("libelle", maladie ? "Enregistrer" : "Créer");
   if (maladie) elements.formulaireMaladie.elements.nom.value = maladie.nom;
@@ -602,11 +603,11 @@ async function importer(fichier) {
     const charge = JSON.parse(await fichier.text());
     const donnees = normaliserDonnees(charge && charge.donnees ? charge.donnees : charge);
     if (!donnees.maladies.length) {
-      notifier("Cette sauvegarde ne contient aucune maladie.");
+      notifier("Cette sauvegarde ne contient aucun traitement.");
       return;
     }
     const accord = await demanderConfirmation(
-      `Remplacer les ${etat.maladies.length} maladie(s) actuelles par les ${donnees.maladies.length} de la sauvegarde ?`
+      `Remplacer les ${etat.maladies.length} traitement${etat.maladies.length > 1 ? "s" : ""} actuels par les ${donnees.maladies.length} de la sauvegarde ?`
     );
     if (!accord) return;
     etat = donnees;
@@ -925,14 +926,14 @@ elements.formulaireMaladie.addEventListener("submit", (evenement) => {
     sauvegarder();
     rendre();
     elements.dialogueMaladie.close();
-    notifier(`« ${nom} » modifiée.`);
+    notifier(`« ${nom} » modifié.`);
     return;
   }
   etat.maladies.unshift({ id: creerId(), nom, creeLe: new Date().toISOString(), medicaments: [] });
   sauvegarder();
   rendre();
   elements.dialogueMaladie.close();
-  notifier(`« ${nom} » ajoutée.`);
+  notifier(`« ${nom} » ajouté.`);
 });
 
 elements.formulaireMedicament.addEventListener("submit", (evenement) => {
@@ -1074,7 +1075,7 @@ elements.liste.addEventListener("click", (evenement) => {
       etat.maladies = etat.maladies.filter((m) => m.id !== idMaladie);
       sauvegarder();
       rendre();
-      notifier("Maladie supprimée.");
+      notifier("Traitement supprimé.");
       break;
     }
 
@@ -1305,7 +1306,7 @@ function terminerAppui() {
   sauvegarder();
   clicBloque = true;
   window.setTimeout(() => { clicBloque = false; }, 350);
-  notifier("Ordre des maladies enregistré.");
+  notifier("Ordre des traitements enregistré.");
 }
 
 elements.liste.addEventListener("pointerdown", demarrerAppui);

@@ -250,20 +250,11 @@ ul { padding: 0; list-style: none; }
 }
 
 .contenu__entete {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--e2) var(--e4);
-  margin-bottom: var(--e6);
+  display: grid;
+  gap: var(--e2);
+  margin-bottom: var(--e5);
   padding-bottom: var(--e4);
   border-bottom: 1px solid var(--filet);
-}
-
-.contenu__titre {
-  font-size: var(--txl);
-  font-weight: 600;
-  letter-spacing: -0.015em;
 }
 
 .resume {
@@ -719,11 +710,13 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 }
 .pied__actions {
   display: flex;
-  gap: var(--e5);
   flex-wrap: wrap;
+  gap: var(--e2) var(--e5);
   padding-top: var(--e4);
   border-top: 1px solid var(--filet);
 }
+/* Même ligne tant que la place le permet ; sinon chaque bouton prend la largeur. */
+.pied__actions > bouton-action > .bouton { flex: 1 1 auto; }
 .pied__note {
   margin-top: var(--e3);
   font-size: var(--tsm);
@@ -1042,10 +1035,11 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 /* ------------------------------------------------------ vues et vue du jour */
 
 .vues {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 2px;
+  width: 100%;
   padding: 2px;
-  margin-left: auto;
   border: 1px solid var(--filet-fort);
   border-radius: 999px;
   background: var(--surface-2);
@@ -1054,7 +1048,7 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 .vues__bouton {
   appearance: none;
   border: 0;
-  padding: 4px 14px;
+  padding: var(--e2) var(--e3);
   border-radius: 999px;
   background: transparent;
   color: var(--texte-doux);
@@ -1073,7 +1067,7 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 .jour { display: grid; gap: var(--e5); }
 
 .jour__barre { display: flex; align-items: center; gap: var(--e2); }
-.jour__entete { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; }
+.jour__entete { flex: 1 1 auto; min-width: 0; display: grid; justify-items: center; gap: 1px; text-align: center; }
 .jour__date { font-size: var(--tlg); font-weight: 500; letter-spacing: -0.01em; }
 .jour__compte { font-size: var(--tsm); color: var(--texte-doux); font-variant-numeric: tabular-nums; }
 .jour__fleche { flex: none; width: 34px; height: 34px; padding: 0; justify-content: center; }
@@ -1425,7 +1419,6 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 
   .contenu { padding: var(--e4) var(--e3) var(--e6); max-width: none; }
 
-  .contenu__titre { font-size: var(--tlg); }
   .contenu__entete { margin-bottom: var(--e4); padding-bottom: var(--e3); }
 
   .carte__bascule { padding: var(--e3) var(--e3) var(--e2); padding-right: var(--e9); }
@@ -1463,7 +1456,6 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .pied { padding: 0 var(--e3) var(--e6); }
   .pied__actions { gap: var(--e4); }
 
-  .vues { margin-left: 0; }
   .jour__fleche { width: 44px; height: 44px; }
   .bouton.carte__editer { min-width: 44px; min-height: 44px; }
   .ruban { gap: 3px; }
@@ -1503,4 +1495,5 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   }
   .jour__barre > bouton-action > .bouton { padding: var(--e2); min-width: 44px; min-height: 44px; }
   .jour__date { font-size: var(--tbase); }
+  .pied__actions { flex-direction: column; gap: var(--e2); }
 }

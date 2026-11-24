@@ -412,12 +412,14 @@ export function extraireOrdonnance(texte) {
 /**
  * Moments de la journée reconnus dans une posologie, dans l'ordre de lecture.
  * « 2 comprimés matin et soir » donne deux prises, une le matin, une le soir.
+ * « Avant le coucher » désigne le soir : la nuit ne vaut que si elle est nommée,
+ * sinon une prise unique « le soir avant le coucher » apparaîtrait deux fois.
  */
 const MOMENTS_PRISE = [
   { cle: "matin", libelle: "Matin", motif: /matin|r[ée]veil/i },
   { cle: "midi", libelle: "Midi", motif: /midi|d[ée]jeuner/i },
-  { cle: "soir", libelle: "Soir", motif: /soir|d[îi]ner/i },
-  { cle: "nuit", libelle: "Nuit", motif: /couch|nuit/i },
+  { cle: "soir", libelle: "Soir", motif: /soir|d[îi]ner|couch/i },
+  { cle: "nuit", libelle: "Nuit", motif: /nuit/i },
   { cle: "journee", libelle: "Sans horaire", motif: null }
 ];
 
@@ -477,8 +479,8 @@ export function resumer(donnees, aujourdHui = aujourdHuiISO()) {
     (total, maladie) => total + (maladie.medicaments || []).filter((medicament) => etatMedicament(medicament, aujourdHui) === "en-cours").length,
     0
   );
-  const parties = [`${maladies.length} maladie${maladies.length > 1 ? "s" : ""}`];
+  const parties = [`${maladies.length} traitement${maladies.length > 1 ? "s" : ""}`];
   if (enCours) parties.push(`${enCours} médicament${enCours > 1 ? "s" : ""} en cours`);
-  else parties.push("aucun traitement en cours");
+  else parties.push("aucun médicament en cours");
   return parties.join(" · ");
 }
