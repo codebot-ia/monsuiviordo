@@ -407,6 +407,70 @@ export function extraireOrdonnance(texte) {
   return resultat;
 }
 
+/* ------------------------------------------------------------------ vue du jour */
+
+/**
+ * Moments de la journée reconnus dans une posologie, dans l'ordre de lecture.
+ * « 2 comprimés matin et soir » donne deux prises, une le matin, une le soir.
+ * « Avant le coucher » désigne le soir : la nuit ne vaut que si elle est nommée,
+ * sinon une prise unique « le soir avant le coucher » apparaîtrait deux fois.
+ */
+const MOMENTS_PRISE = [
+  { cle: "matin", libelle: "Matin", motif: /matin|r[ée]veil/i },
+  { cle: "midi", libelle: "Midi", motif: /midi|d[ée]jeuner/i },
+  { cle: "soir", libelle: "Soir", motif: /soir|d[îi]ner|couch/i },
+  { cle: "nuit", libelle: "Nuit", motif: /nuit/i },
+  { cle: "journee", libelle: "Sans horaire", motif: null }
+];
+
+const ORDRE_MOMENTS = MOMENTS_PRISE.map((moment) => moment.cle);
+
+/** Moments de prise d'une posologie : ceux qu'elle nomme, sinon « journee ». */
+export function momentsDePosologie(posologie) {
+  const texte = String(posologie || "");
+  const trouves = MOMENTS_PRISE.filter((moment) => moment.motif && moment.motif.test(texte)).map((moment) => moment.cle);
+  return trouves.length ? trouves : ["journee"];
+}
+
+/** Libellé lisible d'un moment (« matin » → « Matin »). */
+export function libelleMoment(moment) {
+  const trouve = MOMENTS_PRISE.find((item) => item.cle === moment);
+  return trouve ? trouve.libelle : "Sans horaire";
+}
+
+/** Vrai si le médicament est à prendre ce jour-là (début et fin connus). */
+export function actifLe(medicament, jour) {
+  const fin = finMedicament(medicament);
+  if (!medicament || !medicament.debut || !fin) return false;
+  return jour >= medicament.debut && jour <= fin;
+}
+
+/**
+ * Prises d'une journée, toutes maladies confondues, triées par moment puis par
+ * ordre d'apparition. Chaque prise porte sa clé stable (`idMedicament|moment`),
+ * identique d'un jour à l'autre : le suivi des prises s'y accroche.
+ */
+export function prisesDuJour(maladies, jour) {
+  const prises = [];
+  (maladies || []).forEach((maladie) => {
+    (maladie.medicaments || []).forEach((medicament) => {
+      if (!actifLe(medicament, jour)) return;
+      momentsDePosologie(medicament.posologie).forEach((moment) => {
+        prises.push({
+          cle: `${medicament.id}|${moment}`,
+          moment,
+          idMaladie: maladie.id,
+          maladieNom: maladie.nom,
+          idMedicament: medicament.id,
+          nom: medicament.nom,
+          posologie: medicament.posologie
+        });
+      });
+    });
+  });
+  return prises.sort((a, b) => ORDRE_MOMENTS.indexOf(a.moment) - ORDRE_MOMENTS.indexOf(b.moment));
+}
+
 /** Résumé textuel de l'état général, pour l'en-tête. */
 export function resumer(donnees, aujourdHui = aujourdHuiISO()) {
   const maladies = (donnees && donnees.maladies) || [];
@@ -415,8 +479,8 @@ export function resumer(donnees, aujourdHui = aujourdHuiISO()) {
     (total, maladie) => total + (maladie.medicaments || []).filter((medicament) => etatMedicament(medicament, aujourdHui) === "en-cours").length,
     0
   );
-  const parties = [`${maladies.length} maladie${maladies.length > 1 ? "s" : ""}`];
+  const parties = [`${maladies.length} traitement${maladies.length > 1 ? "s" : ""}`];
   if (enCours) parties.push(`${enCours} médicament${enCours > 1 ? "s" : ""} en cours`);
-  else parties.push("aucun traitement en cours");
+  else parties.push("aucun médicament en cours");
   return parties.join(" · ");
 }

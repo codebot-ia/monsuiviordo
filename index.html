@@ -30,7 +30,7 @@
     </script>
     <link rel="preload" href="./assets/polices/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="./assets/polices/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="./assets/style.css?v=1.14.4">
+    <link rel="stylesheet" href="./assets/style.css?v=1.15.2">
   </head>
   <body>
     <svg xmlns="http://www.w3.org/2000/svg" class="sprite-icones" aria-hidden="true" focusable="false">
@@ -46,6 +46,9 @@
   <symbol id="ico-restaurer" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 9l5 -5l5 5" /> <path d="M12 4l0 12" /></symbol>
   <symbol id="ico-installer" viewBox="0 0 24 24"><path d="M12.5 21h-4.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v7" /> <path d="M11 4h2" /> <path d="M12 17v.01" /> <path d="M19 16v6" /> <path d="M22 19l-3 3l-3 -3" /></symbol>
   <symbol id="ico-fermer" viewBox="0 0 24 24"><path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></symbol>
+  <symbol id="ico-fleche-gauche" viewBox="0 0 24 24"><path d="M15 6l-6 6l6 6" /></symbol>
+  <symbol id="ico-fleche-droite" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6" /></symbol>
+  <symbol id="ico-calendrier" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" /> <path d="M16 3v4" /> <path d="M8 3v4" /> <path d="M4 11h16" /> <path d="M11 15h1" /> <path d="M12 15v3" /></symbol>
   <symbol id="ico-attente" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 7v5l3 3" /></symbol>
   <symbol id="ico-en-cours" viewBox="0 0 24 24"><path d="M6.5 7h11" /> <path d="M6.5 17h11" /> <path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1" /> <path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1" /></symbol>
   <symbol id="ico-termine" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M9 12l2 2l4 -4" /></symbol>
@@ -80,7 +83,7 @@
       </div>
 
       <div class="entete__actions">
-        <bouton-action id="bouton-nouvelle-maladie" icone="plus" variante="principal" libelle="Nouvelle maladie"></bouton-action>
+        <bouton-action id="bouton-nouvelle-maladie" icone="plus" variante="principal" libelle="Nouveau traitement"></bouton-action>
         <bouton-action id="bouton-imprimer-tout" icone="imprimer" variante="discret" libelle="Imprimer tout"></bouton-action>
         <bouton-action id="bouton-installer" icone="installer" variante="discret" libelle="Installer" hidden></bouton-action>
       </div>
@@ -96,44 +99,67 @@
 
     <main id="contenu" class="contenu">
       <div class="contenu__entete">
-        <h2 class="contenu__titre">Traitements</h2>
+        <div class="vues" role="tablist" aria-label="Vue">
+          <button type="button" class="vues__bouton" role="tab" data-action="vue" data-vue="jour" aria-selected="true">Jour</button>
+          <button type="button" class="vues__bouton" role="tab" data-action="vue" data-vue="suivi" aria-selected="false">Traitements</button>
+        </div>
         <p id="resume" class="resume" aria-live="polite"></p>
       </div>
 
-      <section id="liste" class="liste" aria-label="Maladies suivies"></section>
+      <section id="liste" class="liste" aria-label="Traitements suivis" hidden></section>
+
+      <section id="termines" class="groupe" aria-label="Traitements terminés" hidden></section>
+
+      <section id="vue-jour" class="jour" aria-label="Prises du jour" hidden>
+        <div class="jour__barre">
+          <button type="button" class="bouton bouton--discret jour__fleche" data-action="jour-precedent" aria-label="Jour précédent">
+            <icone-tabler nom="fleche-gauche" taille="18"></icone-tabler>
+          </button>
+          <div class="jour__entete">
+            <p id="jour-date" class="jour__date"></p>
+            <p id="jour-compte" class="jour__compte" aria-live="polite"></p>
+          </div>
+          <button type="button" class="bouton bouton--discret jour__fleche" data-action="jour-suivant" aria-label="Jour suivant">
+            <icone-tabler nom="fleche-droite" taille="18"></icone-tabler>
+          </button>
+          <bouton-action id="bouton-aujourdhui" icone="calendrier" variante="discret" action="jour-aujourdhui" libelle="Aujourd'hui" hidden></bouton-action>
+        </div>
+        <ol id="ruban-jours" class="ruban" aria-label="Jours"></ol>
+        <div id="jour-corps" class="jour__corps"></div>
+      </section>
 
       <div id="vide" class="vide" hidden>
         <icone-tabler class="vide__icone" nom="vide" taille="40"></icone-tabler>
-        <p class="vide__titre">Aucune maladie suivie</p>
+        <p class="vide__titre">Aucun traitement suivi</p>
         <p class="vide__texte">
-          Ajoutez une maladie (rhume, angine, gastro…), puis ses médicaments avec leur posologie
-          et leur durée. Appuyez ensuite sur « Début » : MonSuiviOrdo calcule la date de fin du
-          traitement et celle de la maladie.
+          Ajoutez un traitement (rhume, angine, gastro…), puis ses médicaments avec leur posologie
+          et leur durée. Appuyez ensuite sur « Début » : MonSuiviOrdo calcule la date de fin de
+          chaque médicament.
         </p>
-        <bouton-action action="nouvelle-maladie" icone="plus" variante="principal" libelle="Créer ma première maladie"></bouton-action>
+        <bouton-action action="nouvelle-maladie" icone="plus" variante="principal" libelle="Créer mon premier traitement"></bouton-action>
       </div>
     </main>
 
     <footer class="pied">
       <div class="pied__actions">
-        <bouton-action id="bouton-exporter" icone="telecharger" variante="lien" libelle="Sauvegarder mes données"></bouton-action>
-        <bouton-action id="bouton-importer" icone="restaurer" variante="lien" libelle="Restaurer une sauvegarde"></bouton-action>
+        <bouton-action id="bouton-exporter" icone="telecharger" variante="discret" libelle="Sauvegarder mes données"></bouton-action>
+        <bouton-action id="bouton-importer" icone="restaurer" variante="discret" libelle="Restaurer une sauvegarde"></bouton-action>
         <input id="champ-import" type="file" accept="application/json,.json" hidden>
       </div>
       <p class="pied__note">
         Aucune donnée ne quitte cet appareil : pas de compte, pas de serveur. Pensez à sauvegarder
         régulièrement, un nettoyage du navigateur efface le stockage local.
       </p>
-      <p class="pied__version" id="version-pied">Version 1.14.4<span id="mention-preprod" hidden></span></p>
+      <p class="pied__version" id="version-pied">Version 1.15.2<span id="mention-preprod" hidden></span></p>
     </footer>
 
     <dialog id="dialogue-maladie" class="dialogue" aria-labelledby="titre-dialogue-maladie">
       <form id="formulaire-maladie" class="formulaire">
         <h2 id="titre-dialogue-maladie" class="dialogue__titre">
           <icone-tabler nom="ordonnance" taille="18"></icone-tabler>
-          <span class="dialogue__titre-texte">Nouvelle maladie</span>
+          <span class="dialogue__titre-texte">Nouveau traitement</span>
         </h2>
-        <champ-formulaire libelle="Nom de la maladie" nom="nom" type="text" requis maxlength="80"
+        <champ-formulaire libelle="Nom du traitement" nom="nom" type="text" requis maxlength="80"
                           placeholder="Rhume, angine, gastro…" autocomplete="off"></champ-formulaire>
         <div class="dialogue__actions">
           <bouton-action icone="fermer" variante="discret" libelle="Annuler" data-fermer></bouton-action>
@@ -277,6 +303,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.14.4"></script>
+    <script type="module" src="./assets/app.js?v=1.15.2"></script>
   </body>
 </html>

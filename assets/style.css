@@ -250,20 +250,11 @@ ul { padding: 0; list-style: none; }
 }
 
 .contenu__entete {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--e2) var(--e4);
-  margin-bottom: var(--e6);
+  display: grid;
+  gap: var(--e2);
+  margin-bottom: var(--e5);
   padding-bottom: var(--e4);
   border-bottom: 1px solid var(--filet);
-}
-
-.contenu__titre {
-  font-size: var(--txl);
-  font-weight: 600;
-  letter-spacing: -0.015em;
 }
 
 .resume {
@@ -274,6 +265,27 @@ ul { padding: 0; list-style: none; }
 .resume:empty { display: none; }
 
 .liste { display: grid; gap: var(--e3); }
+
+/* Groupe « Terminés » : les traitements finis, à part des traitements en cours. */
+.groupe { display: grid; gap: var(--e3); margin-top: var(--e4); }
+
+.groupe__titre {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  font-size: var(--txs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.groupe__titre::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--filet);
+}
+.groupe__compte { color: var(--texte-muet); font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------- composants montés */
 
@@ -305,14 +317,36 @@ icone-tabler { display: contents; }
   border-radius: var(--rayon-carte);
 }
 
-.carte__entete { display: block; }
+.carte__entete { position: relative; }
 
 .carte__titre-ligne { font-size: inherit; font-weight: inherit; }
+
+/* Crayon du nom : posé dans l'angle de l'en-tête, hors du flux, pour ne pas
+   rogner le titre ni pousser le chevron sur les petits écrans. */
+.bouton.carte__editer {
+  position: absolute;
+  right: var(--e2);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+.bouton.carte__editer .bouton__libelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 .carte__bascule {
   display: flex;
   align-items: center;
   gap: var(--e2);
+  padding-right: var(--e9);
   width: 100%;
   padding: var(--e4) var(--e4) var(--e3);
   border: 0;
@@ -697,11 +731,13 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 }
 .pied__actions {
   display: flex;
-  gap: var(--e5);
   flex-wrap: wrap;
+  gap: var(--e2) var(--e5);
   padding-top: var(--e4);
   border-top: 1px solid var(--filet);
 }
+/* Même ligne tant que la place le permet ; sinon chaque bouton prend la largeur. */
+.pied__actions > bouton-action > .bouton { flex: 1 1 auto; }
 .pied__note {
   margin-top: var(--e3);
   font-size: var(--tsm);
@@ -1017,6 +1053,157 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   from { opacity: 0; transform: translateY(4px); }
 }
 
+/* ------------------------------------------------------ vues et vue du jour */
+
+.vues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 100%;
+  padding: 2px;
+  border: 1px solid var(--filet-fort);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.vues__bouton {
+  appearance: none;
+  border: 0;
+  padding: var(--e2) var(--e3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--tsm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.vues__bouton:hover { color: var(--texte); }
+.vues__bouton[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--texte);
+  box-shadow: 0 0 0 1px var(--filet), 0 1px 2px color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.jour { display: grid; gap: var(--e5); }
+
+.jour__barre { display: flex; align-items: center; gap: var(--e2); }
+.jour__entete { flex: 1 1 auto; min-width: 0; display: grid; justify-items: center; gap: 1px; text-align: center; }
+.jour__date { font-size: var(--tlg); font-weight: 500; letter-spacing: -0.01em; }
+.jour__compte { font-size: var(--tsm); color: var(--texte-doux); font-variant-numeric: tabular-nums; }
+.jour__fleche { flex: none; width: 34px; height: 34px; padding: 0; justify-content: center; }
+
+/* Ruban des jours : une case par jour, la jauge dit ce qui reste à cocher. */
+.ruban { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--e1); }
+.ruban > li { display: flex; }
+
+.ruban__jour {
+  flex: 1 1 auto;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--e2) 0;
+  border: 1px solid var(--filet);
+  border-radius: var(--rayon-commande);
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  cursor: pointer;
+}
+.ruban__jour:hover { background: var(--surface-2); border-color: var(--filet-fort); }
+.ruban__lettre { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-doux); }
+.ruban__nombre { font-family: var(--police-chiffres); font-size: var(--tmd); line-height: 1.1; }
+.ruban__jour[aria-current="date"] .ruban__lettre { color: var(--accent-encre); font-weight: 500; }
+.ruban__jour--choisi { border-color: var(--accent); background: var(--accent-doux); }
+.ruban__jauge { width: 18px; height: 3px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.ruban__jauge-part { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.ruban__jauge--vide { background: transparent; box-shadow: inset 0 0 0 1px var(--filet); }
+
+/* Bande horaire : le fil vertical porte les prises du moment. */
+.jour__corps { display: grid; gap: var(--e5); }
+
+.jour__vide {
+  padding: var(--e6) var(--e4);
+  border: 1px dashed var(--filet-fort);
+  border-radius: var(--rayon-carte);
+  background: var(--surface-2);
+  color: var(--texte-doux);
+  font-size: var(--tsm);
+  text-align: center;
+}
+
+.bande { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: var(--e4); align-items: start; }
+.bande__moment {
+  display: grid;
+  gap: 1px;
+  padding-top: var(--e2);
+  font-size: var(--tsm);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  text-align: right;
+  line-height: 1.25;
+}
+.bande__compte { font-family: var(--police-chiffres); font-size: var(--txs); letter-spacing: 0; color: var(--texte-doux); }
+
+.bande__prises {
+  display: grid;
+  gap: var(--e2);
+  padding-left: var(--e4);
+  border-left: 1px solid var(--filet);
+}
+.bande__prises > li { position: relative; }
+.bande__prises > li::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--e4) - 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--filet-fort);
+}
+.bande__prises > li:has(.prise--prise)::before { background: var(--accent); box-shadow: none; }
+
+.prise {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e2) var(--e3);
+  border: 1px solid var(--filet);
+  border-radius: var(--rayon-commande);
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.prise:hover { background: var(--surface-2); }
+.prise__coche {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--filet-fort);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: transparent;
+}
+.prise--prise .prise__coche { background: var(--accent); border-color: var(--accent); color: var(--sur-accent); }
+.prise__texte { display: grid; gap: 1px; min-width: 0; }
+.prise__nom { font-size: var(--tmd); font-weight: 500; overflow-wrap: anywhere; }
+.prise--prise .prise__nom { color: var(--texte-doux); }
+.prise__details { display: flex; flex-wrap: wrap; gap: 0 var(--e2); font-size: var(--tsm); color: var(--texte-doux); }
+.prise__maladie { display: inline-flex; align-items: center; gap: 5px; }
+.prise__maladie::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.prise--prise .prise__maladie::before { background: var(--texte-muet); }
+.prise__posologie { color: var(--texte-doux); }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -1089,7 +1276,10 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .scan,
   .resume,
   .vide,
+  .vues,
+  .jour,
   .carte__barre,
+  .carte__editer,
   .medicament__actions,
   .jours,
   .medicament__compte,
@@ -1099,6 +1289,9 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .contenu { padding: 0; max-width: none; }
   .contenu__entete { display: none; }
   .liste { display: block; }
+  /* La vue du jour masque la liste, mais « Imprimer tout » imprime le suivi. */
+  .liste[hidden] { display: block !important; }
+  #termines[hidden]:not(:empty) { display: block !important; }
 
   .carte__corps { display: block !important; padding: 0; }
   .carte__bascule { padding: 0; }
@@ -1170,6 +1363,7 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   }
 
   body.impression-unique .carte:not(.carte--imprimee) { display: none !important; }
+  body.impression-unique .groupe__titre { display: none !important; }
 }
 
 @media screen {
@@ -1248,10 +1442,9 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 
   .contenu { padding: var(--e4) var(--e3) var(--e6); max-width: none; }
 
-  .contenu__titre { font-size: var(--tlg); }
   .contenu__entete { margin-bottom: var(--e4); padding-bottom: var(--e3); }
 
-  .carte__bascule { padding: var(--e3) var(--e3) var(--e2); }
+  .carte__bascule { padding: var(--e3) var(--e3) var(--e2); padding-right: var(--e9); }
   .carte__corps { padding: 0 var(--e3) var(--e3); }
   .carte__titre { font-size: var(--tmd); }
   .carte__barre { margin-inline: 0; }
@@ -1286,6 +1479,16 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .pied { padding: 0 var(--e3) var(--e6); }
   .pied__actions { gap: var(--e4); }
 
+  .jour__fleche { width: 44px; height: 44px; }
+  .bouton.carte__editer { min-width: 44px; min-height: 44px; }
+  .ruban { gap: 3px; }
+  .ruban__jour { padding: var(--e1) 0; }
+  .ruban__nombre { font-size: var(--tbase); }
+  .bande { grid-template-columns: 52px minmax(0, 1fr); column-gap: var(--e3); }
+  .bande__moment { font-size: 11px; letter-spacing: 0.04em; }
+  .bande__prises { padding-left: var(--e3); }
+  .bande__prises > li::before { left: calc(-1 * var(--e3) - 4px); }
+
   .dialogue { width: calc(100vw - var(--e3)); }
   .champ-duo { grid-template-columns: 1fr; gap: var(--e3); }
 
@@ -1298,4 +1501,22 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .dialogue__actions > bouton-action > .bouton { width: 100%; min-height: 44px; }
   .dialogue__actions--multi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dialogue__actions--multi .bouton--lien { grid-column: 1 / -1; }
+}
+
+/* ----------------------------------------------------------------- petit écran */
+
+@media (max-width: 599px) {
+  /* Barre du jour : les flèches et le retour à aujourd'hui gardent leur place,
+     seul le libellé du bouton s'efface au profit de l'icône. */
+  .jour__barre > bouton-action > .bouton .bouton__libelle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .jour__barre > bouton-action > .bouton { padding: var(--e2); min-width: 44px; min-height: 44px; }
+  .jour__date { font-size: var(--tbase); }
+  .pied__actions { flex-direction: column; gap: var(--e2); }
 }

@@ -5,6 +5,8 @@
  */
 import {
   aujourdHuiISO,
+  ajouterJours,
+  depuisISO,
   finMedicament,
   finMaladie,
   joursRestants,
@@ -16,6 +18,8 @@ import {
   donneesVides,
   normaliserDonnees,
   extraireOrdonnance,
+  prisesDuJour,
+  libelleMoment,
   resumer
 } from "./logique.js";
 import { demarrerScan } from "./scan.js";
@@ -36,9 +40,17 @@ const CLE_STOCKAGE = "monsuiviordo.v1";
 const RACINE_OCR = new URL("./assets/ocr/", window.location.href).href;
 
 const elements = {
+  contenu: document.getElementById("contenu"),
   liste: document.getElementById("liste"),
+  termines: document.getElementById("termines"),
   vide: document.getElementById("vide"),
   resume: document.getElementById("resume"),
+  vueJour: document.getElementById("vue-jour"),
+  jourDate: document.getElementById("jour-date"),
+  jourCompte: document.getElementById("jour-compte"),
+  rubanJours: document.getElementById("ruban-jours"),
+  jourCorps: document.getElementById("jour-corps"),
+  boutonAujourdhui: document.getElementById("bouton-aujourdhui"),
   notifications: document.getElementById("notifications"),
   boutonImprimerTout: document.getElementById("bouton-imprimer-tout"),
   boutonNouvelleMaladie: document.getElementById("bouton-nouvelle-maladie"),
@@ -68,6 +80,7 @@ const elements = {
 
 let etat = charger();
 let maladieCible = null; // id de la maladie en cours d'édition
+let maladieRenommee = null; // id de la maladie dont on modifie le nom
 let medicamentCible = null; // id du médicament en cours d'édition (null = ajout)
 let invitationInstallation = null;
 let chargementTesseract = null;
@@ -203,11 +216,43 @@ function rendre() {
     minuteurSuppression = null;
   }
   elements.liste.replaceChildren();
+  elements.termines.replaceChildren();
+  const enCours = [];
+  const finis = [];
   for (const maladie of etat.maladies) {
+    (etatMaladie(maladie, aujourdHui) === "termine" ? finis : enCours).push(maladie);
+  }
+  for (const maladie of enCours) {
     elements.liste.appendChild(construireCarte(maladie, aujourdHui));
   }
-  elements.vide.hidden = etat.maladies.length > 0;
+  if (finis.length) {
+    const titre = document.createElement("h2");
+    titre.className = "groupe__titre";
+    const compte = document.createElement("span");
+    compte.className = "groupe__compte";
+    compte.textContent = String(finis.length);
+    titre.append("Terminés", compte);
+    const liste = document.createElement("div");
+    liste.className = "liste";
+    for (const maladie of finis) liste.appendChild(construireCarte(maladie, aujourdHui));
+    elements.termines.append(titre, liste);
+  }
   elements.resume.textContent = resumer(etat, aujourdHui);
+  appliquerVue();
+}
+
+/** Bascule entre la vue du jour et la liste des traitements. */
+function appliquerVue() {
+  const surJour = vue === "jour";
+  const aucunTraitement = etat.maladies.length === 0;
+  elements.liste.hidden = surJour || aucunTraitement;
+  elements.vueJour.hidden = !surJour || aucunTraitement;
+  elements.termines.hidden = surJour || !elements.termines.childElementCount;
+  elements.vide.hidden = !aucunTraitement;
+  document.querySelectorAll(".vues__bouton").forEach((bouton) => {
+    bouton.setAttribute("aria-selected", String(bouton.dataset.vue === vue));
+  });
+  if (surJour) rendreJour();
 }
 
 function texteSousTitre(maladie, aujourdHui) {
@@ -246,6 +291,7 @@ function construireCarte(maladie, aujourdHui) {
           <icone-tabler class="carte__chevron" nom="chevron" taille="16"></icone-tabler>
         </button>
       </h2>
+      <bouton-action class="carte__editer" icone="crayon" variante="petit" action="modifier-maladie" libelle="Modifier"></bouton-action>
     </header>
     <div class="carte__corps" id="corps-${maladie.id}">
       <div class="carte__barre">
@@ -256,7 +302,7 @@ function construireCarte(maladie, aujourdHui) {
       </div>
       ${nombre
         ? `<ul class="medicaments">${lignes}</ul>`
-        : `<p class="carte__vide">Ajoutez les médicaments prescrits pour cette maladie.</p>`}
+        : `<p class="carte__vide">Ajoutez les médicaments prescrits pour ce traitement.</p>`}
     </div>
   `;
   return article;
@@ -327,10 +373,178 @@ function construireLigneMedicament(medicament, aujourdHui) {
   `;
 }
 
+/* ------------------------------------------------------------------ vue du jour */
+
+const CLE_PRISES = "monsuiviordo.prises.v1";
+const JOURS_COURTS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+const CASES_RUBAN = 7; // jours visibles dans le ruban, le jour affiché au centre
+const JOURS_MEMOIRE = 60; // au-delà, les cases cochées ne servent plus à rien
+
+let vue = "jour";
+let jourAffiche = aujourdHuiISO();
+let prisesCochees = chargerPrises();
+
+function chargerPrises() {
+  try {
+    const brut = JSON.parse(window.localStorage.getItem(CLE_PRISES) || "{}");
+    return brut && typeof brut === "object" && !Array.isArray(brut) ? brut : {};
+  } catch (erreur) {
+    console.warn("Lecture des prises impossible", erreur);
+    return {};
+  }
+}
+
+function sauvegarderPrises() {
+  const limite = ajouterJours(aujourdHuiISO(), -JOURS_MEMOIRE);
+  Object.keys(prisesCochees).forEach((jour) => {
+    if (jour < limite) delete prisesCochees[jour];
+  });
+  try {
+    window.localStorage.setItem(CLE_PRISES, JSON.stringify(prisesCochees));
+  } catch (erreur) {
+    console.warn("Enregistrement des prises impossible", erreur);
+  }
+}
+
+/** Une prise est cochée si sa clé figure dans la liste du jour affiché. */
+function priseFaite(prise, jour = jourAffiche) {
+  const liste = prisesCochees[jour];
+  return Array.isArray(liste) && liste.includes(prise.cle);
+}
+
+function basculerPrise(cle) {
+  const liste = Array.isArray(prisesCochees[jourAffiche]) ? prisesCochees[jourAffiche] : [];
+  const desormais = liste.includes(cle) ? liste.filter((item) => item !== cle) : [...liste, cle];
+  prisesCochees[jourAffiche] = desormais;
+  if (!desormais.length) delete prisesCochees[jourAffiche];
+  sauvegarderPrises();
+  rendreJour();
+}
+
+/** « lundi 24 novembre », première lettre en capitale. */
+function libelleJourLong(jour) {
+  const texte = depuisISO(jour).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+function rendreJour() {
+  const aujourdHui = aujourdHuiISO();
+  const prises = prisesDuJour(etat.maladies, jourAffiche);
+  const faites = prises.filter((prise) => priseFaite(prise)).length;
+
+  elements.jourDate.textContent = libelleJourLong(jourAffiche);
+  elements.jourCompte.textContent = prises.length
+    ? `${faites} sur ${prises.length} prise${prises.length > 1 ? "s" : ""}`
+    : etat.maladies.length ? "aucune prise prévue" : "aucun traitement suivi";
+  elements.boutonAujourdhui.hidden = jourAffiche === aujourdHui;
+
+  rendreRuban(aujourdHui);
+
+  elements.jourCorps.replaceChildren();
+  if (!prises.length) {
+    const vide = document.createElement("p");
+    vide.className = "jour__vide";
+    vide.textContent = etat.maladies.length
+      ? "Aucune prise ce jour : aucun médicament démarré ne couvre cette date."
+      : "Ajoutez un traitement et ses médicaments depuis la vue Traitements.";
+    elements.jourCorps.appendChild(vide);
+    return;
+  }
+
+  const bandes = new Map();
+  prises.forEach((prise) => {
+    if (!bandes.has(prise.moment)) bandes.set(prise.moment, []);
+    bandes.get(prise.moment).push(prise);
+  });
+
+  bandes.forEach((items, moment) => {
+    const bande = document.createElement("section");
+    bande.className = "bande";
+    const faitesBande = items.filter((prise) => priseFaite(prise)).length;
+    bande.innerHTML = `
+      <p class="bande__moment">${echapper(libelleMoment(moment))}<span class="bande__compte">${faitesBande}/${items.length}</span></p>
+    `;
+    const liste = document.createElement("ul");
+    liste.className = "bande__prises";
+    items.forEach((prise) => liste.appendChild(construirePrise(prise)));
+    bande.appendChild(liste);
+    elements.jourCorps.appendChild(bande);
+  });
+}
+
+function rendreRuban(aujourdHui) {
+  const debut = ajouterJours(jourAffiche, -Math.floor(CASES_RUBAN / 2));
+  elements.rubanJours.replaceChildren();
+  for (let index = 0; index < CASES_RUBAN; index += 1) {
+    const jour = ajouterJours(debut, index);
+    const items = prisesDuJour(etat.maladies, jour);
+    const faites = items.filter((prise) => priseFaite(prise, jour)).length;
+    const part = items.length ? Math.round((faites / items.length) * 100) : 0;
+    const puce = document.createElement("li");
+    const bouton = document.createElement("button");
+    bouton.type = "button";
+    bouton.dataset.action = "jour-choisir";
+    bouton.dataset.jour = jour;
+    bouton.className = `ruban__jour${jour === jourAffiche ? " ruban__jour--choisi" : ""}`;
+    if (jour === aujourdHui) bouton.setAttribute("aria-current", "date");
+    bouton.setAttribute("aria-label", `${libelleJourLong(jour)}, ${items.length} prise${items.length > 1 ? "s" : ""}, ${faites} faite${faites > 1 ? "s" : ""}`);
+    bouton.innerHTML = `
+      <span class="ruban__lettre">${JOURS_COURTS[depuisISO(jour).getDay()]}</span>
+      <span class="ruban__nombre">${Number(jour.slice(8, 10))}</span>
+      <span class="ruban__jauge${items.length ? "" : " ruban__jauge--vide"}" aria-hidden="true">
+        <span class="ruban__jauge-part" style="width:${part}%"></span>
+      </span>
+    `;
+    puce.appendChild(bouton);
+    elements.rubanJours.appendChild(puce);
+  }
+}
+
+function construirePrise(prise) {
+  const item = document.createElement("li");
+  const bouton = document.createElement("button");
+  const faite = priseFaite(prise);
+  bouton.type = "button";
+  bouton.className = `prise${faite ? " prise--prise" : ""}`;
+  bouton.dataset.action = "basculer-prise";
+  bouton.dataset.prise = prise.cle;
+  bouton.setAttribute("aria-pressed", String(faite));
+  bouton.innerHTML = `
+    <span class="prise__coche" aria-hidden="true"><icone-tabler nom="succes" taille="15"></icone-tabler></span>
+    <span class="prise__texte">
+      <span class="prise__nom">${echapper(prise.nom)}</span>
+      <span class="prise__details">
+        <span class="prise__maladie">${echapper(prise.maladieNom)}</span>
+        ${prise.posologie ? `<span class="prise__posologie">${echapper(prise.posologie)}</span>` : ""}
+      </span>
+    </span>
+  `;
+  item.appendChild(bouton);
+  return item;
+}
+
+function changerVue(nouvelle) {
+  if (nouvelle !== "suivi" && nouvelle !== "jour") return;
+  vue = nouvelle;
+  appliquerVue();
+}
+
+function changerJour(nouveau) {
+  jourAffiche = nouveau;
+  rendreJour();
+}
+
 /* ------------------------------------------------------------------ dialogues */
 
-function ouvrirDialogueMaladie() {
+function ouvrirDialogueMaladie(idMaladie = null) {
+  const maladie = idMaladie ? trouverMaladie(idMaladie) : null;
+  maladieRenommee = maladie ? maladie.id : null;
   elements.formulaireMaladie.reset();
+  const titre = elements.dialogueMaladie.querySelector("#titre-dialogue-maladie");
+  definirTitreDialogue(titre, maladie ? "Modifier le traitement" : "Nouveau traitement");
+  const valider = elements.formulaireMaladie.querySelector('bouton-action[type="submit"]');
+  if (valider) valider.setAttribute("libelle", maladie ? "Enregistrer" : "Créer");
+  if (maladie) elements.formulaireMaladie.elements.nom.value = maladie.nom;
   elements.dialogueMaladie.showModal();
   elements.formulaireMaladie.elements.nom.focus();
 }
@@ -371,7 +585,7 @@ function imprimer(idMaladie) {
   let complement = "";
   if (idMaladie) {
     document.body.classList.add("impression-unique");
-    const carte = elements.liste.querySelector(`[data-maladie="${idMaladie}"]`);
+    const carte = elements.contenu.querySelector(`[data-maladie="${idMaladie}"]`);
     if (carte) carte.classList.add("carte--imprimee");
     const maladie = trouverMaladie(idMaladie);
     if (maladie) complement = ` · ${maladie.nom}`;
@@ -410,11 +624,11 @@ async function importer(fichier) {
     const charge = JSON.parse(await fichier.text());
     const donnees = normaliserDonnees(charge && charge.donnees ? charge.donnees : charge);
     if (!donnees.maladies.length) {
-      notifier("Cette sauvegarde ne contient aucune maladie.");
+      notifier("Cette sauvegarde ne contient aucun traitement.");
       return;
     }
     const accord = await demanderConfirmation(
-      `Remplacer les ${etat.maladies.length} maladie(s) actuelles par les ${donnees.maladies.length} de la sauvegarde ?`
+      `Remplacer les ${etat.maladies.length} traitement${etat.maladies.length > 1 ? "s" : ""} actuels par les ${donnees.maladies.length} de la sauvegarde ?`
     );
     if (!accord) return;
     etat = donnees;
@@ -657,7 +871,7 @@ function remplirAnalyse(ordonnance, texte) {
 
 /* ------------------------------------------------------------------ événements */
 
-elements.boutonNouvelleMaladie.addEventListener("click", ouvrirDialogueMaladie);
+elements.boutonNouvelleMaladie.addEventListener("click", () => ouvrirDialogueMaladie());
 elements.boutonImprimerTout.addEventListener("click", () => imprimer(null));
 elements.boutonExporter.addEventListener("click", exporter);
 elements.boutonImporter.addEventListener("click", () => elements.champImport.click());
@@ -727,11 +941,20 @@ elements.formulaireMaladie.addEventListener("submit", (evenement) => {
   evenement.preventDefault();
   const nom = elements.formulaireMaladie.elements.nom.value.trim();
   if (!nom) return;
+  const maladie = maladieRenommee ? trouverMaladie(maladieRenommee) : null;
+  if (maladie) {
+    maladie.nom = nom;
+    sauvegarder();
+    rendre();
+    elements.dialogueMaladie.close();
+    notifier(`« ${nom} » modifié.`);
+    return;
+  }
   etat.maladies.unshift({ id: creerId(), nom, creeLe: new Date().toISOString(), medicaments: [] });
   sauvegarder();
   rendre();
   elements.dialogueMaladie.close();
-  notifier(`« ${nom} » ajoutée.`);
+  notifier(`« ${nom} » ajouté.`);
 });
 
 elements.formulaireMedicament.addEventListener("submit", (evenement) => {
@@ -818,7 +1041,7 @@ elements.formulaireAnalyse.addEventListener("submit", (evenement) => {
   notifier(`${ajouts.length} médicament${ajouts.length > 1 ? "s" : ""} ajouté${ajouts.length > 1 ? "s" : ""}.`);
 });
 
-elements.liste.addEventListener("click", (evenement) => {
+elements.contenu.addEventListener("click", (evenement) => {
   // Un glisser-déposer vient de se terminer : on n'ouvre pas la carte.
   if (clicBloque) {
     evenement.preventDefault();
@@ -873,7 +1096,7 @@ elements.liste.addEventListener("click", (evenement) => {
       etat.maladies = etat.maladies.filter((m) => m.id !== idMaladie);
       sauvegarder();
       rendre();
-      notifier("Maladie supprimée.");
+      notifier("Traitement supprimé.");
       break;
     }
 
@@ -903,6 +1126,10 @@ elements.liste.addEventListener("click", (evenement) => {
       ouvrirDialogueMedicament(idMaladie, idMedicament);
       break;
 
+    case "modifier-maladie":
+      if (idMaladie) ouvrirDialogueMaladie(idMaladie);
+      break;
+
     case "supprimer-medicament": {
       const maladie = trouverMaladie(idMaladie);
       if (!maladie) break;
@@ -927,6 +1154,30 @@ elements.liste.addEventListener("click", (evenement) => {
 // Recalcule les compteurs au retour sur l'onglet (changement de jour).
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") rendre();
+});
+
+/* ------------------------------------------------------- vue du jour : gestes */
+
+document.addEventListener("click", (evenement) => {
+  const bouton = evenement.target.closest("[data-action]");
+  if (!bouton) return;
+  const action = bouton.dataset.action;
+
+  if (action === "vue") {
+    changerVue(bouton.dataset.vue);
+    return;
+  }
+  if (action === "basculer-prise") {
+    basculerPrise(bouton.dataset.prise);
+    return;
+  }
+  if (action === "jour-choisir") {
+    if (bouton.dataset.jour) changerJour(bouton.dataset.jour);
+    return;
+  }
+  if (action === "jour-precedent") changerJour(ajouterJours(jourAffiche, -1));
+  else if (action === "jour-suivant") changerJour(ajouterJours(jourAffiche, 1));
+  else if (action === "jour-aujourdhui") changerJour(aujourdHuiISO());
 });
 
 // Installation en application (Android/Chrome) quand le navigateur le propose.
@@ -1071,12 +1322,12 @@ function terminerAppui() {
   glisser = null;
   if (!aGlisse) return;
 
-  const ordre = [...elements.liste.querySelectorAll(".carte")].map((carte) => carte.dataset.maladie);
+  const ordre = [...elements.contenu.querySelectorAll(".carte")].map((carte) => carte.dataset.maladie);
   etat.maladies.sort((a, b) => ordre.indexOf(a.id) - ordre.indexOf(b.id));
   sauvegarder();
   clicBloque = true;
   window.setTimeout(() => { clicBloque = false; }, 350);
-  notifier("Ordre des maladies enregistré.");
+  notifier("Ordre des traitements enregistré.");
 }
 
 elements.liste.addEventListener("pointerdown", demarrerAppui);
