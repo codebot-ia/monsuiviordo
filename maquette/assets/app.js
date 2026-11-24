@@ -40,7 +40,9 @@ const CLE_STOCKAGE = "monsuiviordo.v1";
 const RACINE_OCR = new URL("./assets/ocr/", window.location.href).href;
 
 const elements = {
+  contenu: document.getElementById("contenu"),
   liste: document.getElementById("liste"),
+  termines: document.getElementById("termines"),
   vide: document.getElementById("vide"),
   resume: document.getElementById("resume"),
   vueJour: document.getElementById("vue-jour"),
@@ -214,8 +216,26 @@ function rendre() {
     minuteurSuppression = null;
   }
   elements.liste.replaceChildren();
+  elements.termines.replaceChildren();
+  const enCours = [];
+  const finis = [];
   for (const maladie of etat.maladies) {
+    (etatMaladie(maladie, aujourdHui) === "termine" ? finis : enCours).push(maladie);
+  }
+  for (const maladie of enCours) {
     elements.liste.appendChild(construireCarte(maladie, aujourdHui));
+  }
+  if (finis.length) {
+    const titre = document.createElement("h2");
+    titre.className = "groupe__titre";
+    const compte = document.createElement("span");
+    compte.className = "groupe__compte";
+    compte.textContent = String(finis.length);
+    titre.append("Terminés", compte);
+    const liste = document.createElement("div");
+    liste.className = "liste";
+    for (const maladie of finis) liste.appendChild(construireCarte(maladie, aujourdHui));
+    elements.termines.append(titre, liste);
   }
   elements.resume.textContent = resumer(etat, aujourdHui);
   appliquerVue();
@@ -227,6 +247,7 @@ function appliquerVue() {
   const aucunTraitement = etat.maladies.length === 0;
   elements.liste.hidden = surJour || aucunTraitement;
   elements.vueJour.hidden = !surJour || aucunTraitement;
+  elements.termines.hidden = surJour || !elements.termines.childElementCount;
   elements.vide.hidden = !aucunTraitement;
   document.querySelectorAll(".vues__bouton").forEach((bouton) => {
     bouton.setAttribute("aria-selected", String(bouton.dataset.vue === vue));
@@ -564,7 +585,7 @@ function imprimer(idMaladie) {
   let complement = "";
   if (idMaladie) {
     document.body.classList.add("impression-unique");
-    const carte = elements.liste.querySelector(`[data-maladie="${idMaladie}"]`);
+    const carte = elements.contenu.querySelector(`[data-maladie="${idMaladie}"]`);
     if (carte) carte.classList.add("carte--imprimee");
     const maladie = trouverMaladie(idMaladie);
     if (maladie) complement = ` · ${maladie.nom}`;
@@ -1020,7 +1041,7 @@ elements.formulaireAnalyse.addEventListener("submit", (evenement) => {
   notifier(`${ajouts.length} médicament${ajouts.length > 1 ? "s" : ""} ajouté${ajouts.length > 1 ? "s" : ""}.`);
 });
 
-elements.liste.addEventListener("click", (evenement) => {
+elements.contenu.addEventListener("click", (evenement) => {
   // Un glisser-déposer vient de se terminer : on n'ouvre pas la carte.
   if (clicBloque) {
     evenement.preventDefault();
@@ -1301,7 +1322,7 @@ function terminerAppui() {
   glisser = null;
   if (!aGlisse) return;
 
-  const ordre = [...elements.liste.querySelectorAll(".carte")].map((carte) => carte.dataset.maladie);
+  const ordre = [...elements.contenu.querySelectorAll(".carte")].map((carte) => carte.dataset.maladie);
   etat.maladies.sort((a, b) => ordre.indexOf(a.id) - ordre.indexOf(b.id));
   sauvegarder();
   clicBloque = true;

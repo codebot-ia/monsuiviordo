@@ -30,7 +30,7 @@
     </script>
     <link rel="preload" href="./assets/polices/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="./assets/polices/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="./assets/style.css?v=1.15.1">
+    <link rel="stylesheet" href="./assets/style.css?v=1.15.2">
   </head>
   <body>
     <svg xmlns="http://www.w3.org/2000/svg" class="sprite-icones" aria-hidden="true" focusable="false">
@@ -108,6 +108,8 @@
 
       <section id="liste" class="liste" aria-label="Traitements suivis" hidden></section>
 
+      <section id="termines" class="groupe" aria-label="Traitements terminés" hidden></section>
+
       <section id="vue-jour" class="jour" aria-label="Prises du jour" hidden>
         <div class="jour__barre">
           <button type="button" class="bouton bouton--discret jour__fleche" data-action="jour-precedent" aria-label="Jour précédent">
@@ -140,15 +142,15 @@
 
     <footer class="pied">
       <div class="pied__actions">
-        <bouton-action id="bouton-exporter" icone="telecharger" variante="lien" libelle="Sauvegarder mes données"></bouton-action>
-        <bouton-action id="bouton-importer" icone="restaurer" variante="lien" libelle="Restaurer une sauvegarde"></bouton-action>
+        <bouton-action id="bouton-exporter" icone="telecharger" variante="discret" libelle="Sauvegarder mes données"></bouton-action>
+        <bouton-action id="bouton-importer" icone="restaurer" variante="discret" libelle="Restaurer une sauvegarde"></bouton-action>
         <input id="champ-import" type="file" accept="application/json,.json" hidden>
       </div>
       <p class="pied__note">
         Aucune donnée ne quitte cet appareil : pas de compte, pas de serveur. Pensez à sauvegarder
         régulièrement, un nettoyage du navigateur efface le stockage local.
       </p>
-      <p class="pied__version" id="version-pied">Version 1.15.1<span id="mention-preprod" hidden></span></p>
+      <p class="pied__version" id="version-pied">Version 1.15.2<span id="mention-preprod" hidden></span></p>
     </footer>
 
     <dialog id="dialogue-maladie" class="dialogue" aria-labelledby="titre-dialogue-maladie">
@@ -301,6 +303,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.15.1"></script>
+    <script type="module" src="./assets/app.js?v=1.15.2"></script>
   </body>
 </html>
