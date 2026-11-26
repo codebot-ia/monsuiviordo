@@ -850,6 +850,40 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
 
 .champ-duo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e3); }
 
+.moments { display: grid; gap: var(--e2); }
+.moments__choix { display: flex; flex-wrap: wrap; gap: var(--e2); }
+.moment { position: relative; display: inline-flex; }
+.moment input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.moment__libelle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--e4);
+  border: 1px solid var(--filet-fort);
+  border-radius: 999px;
+  font-size: var(--tmd);
+  color: var(--texte-doux);
+  transition: background var(--duree) var(--courbe), border-color var(--duree) var(--courbe),
+    color var(--duree) var(--courbe);
+}
+.moment input:checked + .moment__libelle {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--accent-encre);
+  font-weight: 500;
+}
+.moment input:focus-visible + .moment__libelle {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.champ__aide:empty { display: none; }
+
 .champ__saisie--zone {
   resize: vertical;
   min-height: 2.9rem;

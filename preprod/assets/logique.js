@@ -430,9 +430,10 @@ const PRISES_MAX_JOUR = 6;
 const MOTIF_FREQUENCE = /\b(\d+|une?|deux|trois|quatre|cinq|six)\s*(?:fois|prises?)\s*(?:par|\/)\s*(?:jour|24\s*h)/i;
 
 /**
- * Nombre de prises annoncé par une posologie : « 2 fois par jour » vaut deux
- * prises, sans quoi la journée n'en afficherait qu'une. Une dose unique de
- * plusieurs unités (« 2 comprimés par jour ») reste une seule prise.
+ * Nombre de prises par jour annoncé par une posologie (« 2 fois par jour » vaut
+ * deux). Sert d'indication à la saisie, jamais à créer des prises : une prise
+ * n'existe dans la journée que si la posologie nomme son moment. Une dose
+ * unique de plusieurs unités (« 2 comprimés par jour ») reste une seule prise.
  */
 export function nombrePrisesParJour(posologie) {
   const correspondance = String(posologie || "").match(MOTIF_FREQUENCE);
@@ -443,15 +444,39 @@ export function nombrePrisesParJour(posologie) {
   return Math.min(nombre, PRISES_MAX_JOUR);
 }
 
-/**
- * Moments de prise d'une posologie : ceux qu'elle nomme, sinon autant de
- * « journee » que la posologie annonce de prises.
- */
-export function momentsDePosologie(posologie) {
+/** Moments nommés par une posologie, dans l'ordre de la journée (vide si aucun). */
+export function momentsNommes(posologie) {
   const texte = String(posologie || "");
-  const trouves = MOMENTS_PRISE.filter((moment) => moment.motif && moment.motif.test(texte)).map((moment) => moment.cle);
-  if (trouves.length) return trouves;
-  return Array.from({ length: nombrePrisesParJour(texte) }, () => "journee");
+  return MOMENTS_PRISE.filter((moment) => moment.motif && moment.motif.test(texte)).map((moment) => moment.cle);
+}
+
+/** Moments de prise d'une posologie : ceux qu'elle nomme, sinon « journee ». */
+export function momentsDePosologie(posologie) {
+  const trouves = momentsNommes(posologie);
+  return trouves.length ? trouves : ["journee"];
+}
+
+/** « matin et soir », « matin, midi et soir ». */
+export function momentsEnClair(moments) {
+  const libelles = (moments || []).map((moment) => libelleMoment(moment).toLowerCase());
+  if (libelles.length < 2) return libelles[0] || "";
+  return `${libelles.slice(0, -1).join(", ")} et ${libelles[libelles.length - 1]}`;
+}
+
+/**
+ * Écrit dans la posologie les moments choisis qui n'y figurent pas encore :
+ * « 2 fois par jour » + matin et soir → « 2 fois par jour, matin et soir ».
+ * Les moments déjà nommés sont laissés au texte ; un texte vide donne les
+ * moments seuls.
+ */
+export function completerPosologie(posologie, moments) {
+  const texte = String(posologie || "").trim();
+  const nommes = momentsNommes(texte);
+  const manquants = (moments || []).filter((moment) => ORDRE_MOMENTS.includes(moment) && !nommes.includes(moment));
+  if (!manquants.length) return texte;
+  const base = texte.replace(/[\s.,;:]+$/, "");
+  const ajout = momentsEnClair(manquants);
+  return base ? `${base}, ${ajout}` : ajout;
 }
 
 /** Libellé lisible d'un moment (« matin » → « Matin »). */
@@ -477,12 +502,9 @@ export function prisesDuJour(maladies, jour) {
   (maladies || []).forEach((maladie) => {
     (maladie.medicaments || []).forEach((medicament) => {
       if (!actifLe(medicament, jour)) return;
-      const rangs = new Map();
       momentsDePosologie(medicament.posologie).forEach((moment) => {
-        const rang = (rangs.get(moment) || 0) + 1;
-        rangs.set(moment, rang);
         prises.push({
-          cle: rang === 1 ? `${medicament.id}|${moment}` : `${medicament.id}|${moment}#${rang}`,
+          cle: `${medicament.id}|${moment}`,
           moment,
           idMaladie: maladie.id,
           maladieNom: maladie.nom,

@@ -20,6 +20,10 @@ import {
   extraireOrdonnance,
   prisesDuJour,
   libelleMoment,
+  momentsNommes,
+  momentsEnClair,
+  nombrePrisesParJour,
+  completerPosologie,
   resumer
 } from "./logique.js";
 import { demarrerScan } from "./scan.js";
@@ -63,6 +67,7 @@ const elements = {
   formulaireMaladie: document.getElementById("formulaire-maladie"),
   dialogueMedicament: document.getElementById("dialogue-medicament"),
   formulaireMedicament: document.getElementById("formulaire-medicament"),
+  aideMoments: document.getElementById("aide-moments"),
   titreDialogueMedicament: document.getElementById("titre-dialogue-medicament"),
   impressionDate: document.getElementById("impression-date"),
   dialogueConfirmation: document.getElementById("dialogue-confirmation"),
@@ -549,6 +554,74 @@ function ouvrirDialogueMaladie(idMaladie = null) {
   elements.formulaireMaladie.elements.nom.focus();
 }
 
+/* ------------------------------------------------------- moments de la saisie */
+
+function casesMoments() {
+  return Array.from(elements.formulaireMedicament.querySelectorAll('input[name="moment"]'));
+}
+
+function momentsCoches() {
+  return casesMoments()
+    .filter((coche) => coche.checked)
+    .map((coche) => coche.value);
+}
+
+function posologieEnSaisie() {
+  return elements.formulaireMedicament.elements.posologie.value;
+}
+
+/**
+ * Les cases suivent les moments écrits dans la posologie, et signalent l'écart
+ * avec le nombre de prises qu'elle annonce. Rien n'est coché d'office : seuls
+ * les moments choisis finiront écrits dans la posologie.
+ */
+function majAideMoments() {
+  const posologie = posologieEnSaisie();
+  const nommes = momentsNommes(posologie);
+  const coches = momentsCoches();
+  const annoncees = nombrePrisesParJour(posologie);
+  let aide = "";
+  if (nommes.length) {
+    aide = `Lus dans la posologie : ${momentsEnClair(nommes)}.`;
+  } else if (!coches.length) {
+    aide =
+      annoncees > 1
+        ? `La posologie annonce ${annoncees} prises par jour : choisissez leurs moments.`
+        : "Sans moment choisi, le médicament compte une prise « Sans horaire ».";
+  } else if (annoncees !== coches.length) {
+    aide = `La posologie annonce ${annoncees} prise${annoncees > 1 ? "s" : ""} par jour, ${coches.length} moment${coches.length > 1 ? "s" : ""} coché${coches.length > 1 ? "s" : ""}.`;
+  }
+  elements.aideMoments.textContent = aide;
+}
+
+function preparerMoments() {
+  const nommes = momentsNommes(posologieEnSaisie());
+  casesMoments().forEach((coche) => {
+    coche.checked = nommes.includes(coche.value);
+  });
+  majAideMoments();
+}
+
+elements.formulaireMedicament.addEventListener("input", (evenement) => {
+  if (evenement.target.name !== "posologie") return;
+  const nommes = momentsNommes(posologieEnSaisie());
+  if (nommes.length) {
+    casesMoments().forEach((coche) => {
+      coche.checked = nommes.includes(coche.value);
+    });
+  }
+  majAideMoments();
+});
+
+elements.formulaireMedicament.addEventListener("change", (evenement) => {
+  if (!evenement.target.matches('input[name="moment"]')) return;
+  if (!evenement.target.checked && momentsNommes(posologieEnSaisie()).includes(evenement.target.value)) {
+    evenement.target.checked = true;
+    notifier(`« ${libelleMoment(evenement.target.value)} » est écrit dans la posologie : retirez-le du texte pour le changer.`, "info");
+  }
+  majAideMoments();
+});
+
 function ouvrirDialogueMedicament(idMaladie, idMedicament) {
   const maladie = trouverMaladie(idMaladie);
   if (!maladie) return;
@@ -570,6 +643,7 @@ function ouvrirDialogueMedicament(idMaladie, idMedicament) {
   }
 
   elements.dialogueMedicament.showModal();
+  preparerMoments();
   elements.formulaireMedicament.elements.nom.focus();
 }
 
@@ -968,7 +1042,7 @@ elements.formulaireMedicament.addEventListener("submit", (evenement) => {
   const duree = Math.min(Math.max(parseInt(formulaire.dureeJours.value, 10) || 1, 1), 365);
   const valeurs = {
     nom,
-    posologie: formulaire.posologie.value.trim(),
+    posologie: completerPosologie(formulaire.posologie.value, momentsCoches()),
     dureeJours: duree,
     debut: formulaire.debut.value || null
   };
