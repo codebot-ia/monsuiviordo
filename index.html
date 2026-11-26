@@ -30,7 +30,7 @@
     </script>
     <link rel="preload" href="./assets/polices/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="./assets/polices/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="./assets/style.css?v=1.15.2">
+    <link rel="stylesheet" href="./assets/style.css?v=1.16.0">
   </head>
   <body>
     <svg xmlns="http://www.w3.org/2000/svg" class="sprite-icones" aria-hidden="true" focusable="false">
@@ -150,7 +150,7 @@
         Aucune donnée ne quitte cet appareil : pas de compte, pas de serveur. Pensez à sauvegarder
         régulièrement, un nettoyage du navigateur efface le stockage local.
       </p>
-      <p class="pied__version" id="version-pied">Version 1.15.2<span id="mention-preprod" hidden></span></p>
+      <p class="pied__version" id="version-pied">Version 1.16.0<span id="mention-preprod" hidden></span></p>
     </footer>
 
     <dialog id="dialogue-maladie" class="dialogue" aria-labelledby="titre-dialogue-maladie">
@@ -179,6 +179,15 @@
                           placeholder="Paracétamol 1000 mg" autocomplete="off"></champ-formulaire>
         <champ-formulaire libelle="Posologie" nom="posologie" type="text" maxlength="120"
                           placeholder="2 comprimés matin et soir" autocomplete="off"></champ-formulaire>
+        <div class="moments" role="group" aria-labelledby="titre-moments">
+          <span class="champ__libelle" id="titre-moments">Moments de prise</span>
+          <div class="moments__choix">
+            <label class="moment"><input type="checkbox" name="moment" value="matin"><span class="moment__libelle">Matin</span></label>
+            <label class="moment"><input type="checkbox" name="moment" value="midi"><span class="moment__libelle">Midi</span></label>
+            <label class="moment"><input type="checkbox" name="moment" value="soir"><span class="moment__libelle">Soir</span></label>
+          </div>
+          <span class="champ__aide" id="aide-moments" aria-live="polite"></span>
+        </div>
         <div class="champ-duo">
           <champ-formulaire libelle="Durée (jours)" nom="dureeJours" type="number" min="1" max="365"
                             step="1" value="7" requis inputmode="numeric"></champ-formulaire>
@@ -303,6 +312,6 @@
 
     <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./assets/app.js?v=1.15.2"></script>
+    <script type="module" src="./assets/app.js?v=1.16.0"></script>
   </body>
 </html>
