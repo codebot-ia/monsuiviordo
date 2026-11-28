@@ -923,7 +923,7 @@ function ajouterLigneAnalyse(valeurs) {
   ligne.className = "ligne-analyse";
   ligne.innerHTML = `
     <label class="ligne-analyse__choix">
-      <input type="checkbox" checked aria-label="Ajouter ce médicament">
+      <input type="checkbox" data-champ="retenir" checked aria-label="Ajouter ce médicament">
     </label>
     <div class="ligne-analyse__champs">
       <input class="champ__saisie" data-champ="nom" type="text" maxlength="80"
@@ -931,6 +931,10 @@ function ajouterLigneAnalyse(valeurs) {
       <textarea class="champ__saisie champ__saisie--zone" data-champ="posologie" rows="2" maxlength="220"
                 placeholder="Posologie" aria-label="Posologie">${echapper(valeurs.posologie || "")}</textarea>
       <div class="ligne-analyse__pied">
+        <label class="ligne-analyse__a-vie">
+          <input type="checkbox" data-champ="sansFin"${sansFin(valeurs) ? " checked" : ""}>
+          <span>Traitement à vie</span>
+        </label>
         <label class="ligne-analyse__duree">
           <span>Durée (jours)</span>
           <input class="champ__saisie" data-champ="dureeJours" type="number" min="1" max="365"
@@ -943,12 +947,21 @@ function ajouterLigneAnalyse(valeurs) {
       </div>
     </div>`;
   elements.listeAnalyse.appendChild(ligne);
+  appliquerDureeAnalyse(ligne);
   majBoutonAnalyse();
   return ligne;
 }
 
+/** Ligne cochée « à vie » : la durée en jours n'a plus de sens, le champ s'efface. */
+function appliquerDureeAnalyse(ligne) {
+  if (!ligne) return;
+  const aVie = ligne.querySelector('[data-champ="sansFin"]');
+  const duree = ligne.querySelector(".ligne-analyse__duree");
+  if (aVie && duree) duree.hidden = aVie.checked;
+}
+
 function majBoutonAnalyse() {
-  const total = elements.listeAnalyse.querySelectorAll('.ligne-analyse input[type="checkbox"]:checked').length;
+  const total = elements.listeAnalyse.querySelectorAll('.ligne-analyse input[data-champ="retenir"]:checked').length;
   elements.boutonAjouterAnalyse.disabled = total === 0;
   definirLibelle(elements.boutonAjouterAnalyse, total > 1 ? `Ajouter ${total} médicaments` : "Ajouter le médicament");
 }
@@ -1112,7 +1125,12 @@ elements.listeAnalyse.addEventListener("click", (evenement) => {
 });
 
 elements.listeAnalyse.addEventListener("change", (evenement) => {
-  if (evenement.target.matches('input[type="checkbox"]')) majBoutonAnalyse();
+  const champ = evenement.target.dataset.champ;
+  if (champ === "sansFin") {
+    appliquerDureeAnalyse(evenement.target.closest(".ligne-analyse"));
+    return;
+  }
+  if (champ === "retenir") majBoutonAnalyse();
 });
 
 elements.formulaireAnalyse.addEventListener("submit", (evenement) => {
@@ -1122,7 +1140,7 @@ elements.formulaireAnalyse.addEventListener("submit", (evenement) => {
   cartesOuvertes.add(maladie.id);
   const ajouts = [];
   for (const ligne of elements.listeAnalyse.querySelectorAll(".ligne-analyse")) {
-    const coche = ligne.querySelector('input[type="checkbox"]').checked;
+    const coche = ligne.querySelector('[data-champ="retenir"]').checked;
     const nom = ligne.querySelector('[data-champ="nom"]').value.trim();
     if (!coche || !nom) continue;
     const duree = parseInt(ligne.querySelector('[data-champ="dureeJours"]').value, 10);
@@ -1131,6 +1149,7 @@ elements.formulaireAnalyse.addEventListener("submit", (evenement) => {
       nom,
       posologie: ligne.querySelector('[data-champ="posologie"]').value.trim(),
       dureeJours: Math.min(Math.max(duree || 7, 1), 365),
+      sansFin: ligne.querySelector('[data-champ="sansFin"]').checked,
       debut: null
     });
   }

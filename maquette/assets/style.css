@@ -1053,6 +1053,25 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   color: var(--texte-doux);
 }
 .ligne-analyse__duree input { width: 5rem; }
+.ligne-analyse__duree[hidden] { display: none; }
+
+.ligne-analyse__a-vie {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 34px;
+  font-size: var(--tsm);
+  color: var(--texte-doux);
+  cursor: pointer;
+}
+.ligne-analyse__a-vie input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  margin: 0;
+  flex: none;
+}
+.ligne-analyse__a-vie:has(input:checked) { color: var(--texte); }
 
 .ligne-analyse__pied .bouton--petit {
   margin-left: auto;
@@ -1559,4 +1578,8 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .jour__barre > bouton-action > .bouton { padding: var(--e2); min-width: 44px; min-height: 44px; }
   .jour__date { font-size: var(--tbase); }
   .pied__actions { flex-direction: column; gap: var(--e2); }
+  /* Ligne d'analyse : « à vie » et Retirer sur la ligne, la durée en dessous. */
+  .ligne-analyse__a-vie { order: 1; }
+  .ligne-analyse__pied .bouton--petit { order: 2; }
+  .ligne-analyse__duree { order: 3; flex: 1 0 100%; }
 }
