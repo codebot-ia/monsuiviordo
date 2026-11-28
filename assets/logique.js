@@ -29,9 +29,21 @@ export function ajouterJours(iso, jours) {
   return versISO(date);
 }
 
+/** Vrai si le traitement n'a pas de date de fin : durée indéterminée, « à vie ». */
+export function sansFin(medicament) {
+  return Boolean(medicament && medicament.sansFin === true);
+}
+
+/** Durée d'un médicament en clair : « 7 jours », « 1 jour » ou « durée indéterminée ». */
+export function libelleDuree(medicament) {
+  if (sansFin(medicament)) return "durée indéterminée";
+  const duree = Number(medicament && medicament.dureeJours) || 0;
+  return duree > 0 ? `${duree} jour${duree > 1 ? "s" : ""}` : "durée à préciser";
+}
+
 /** Date de fin d'un médicament : début + durée - 1 (le jour du début compte comme jour 1). */
 export function finMedicament(medicament) {
-  if (!medicament || !medicament.debut) return null;
+  if (!medicament || !medicament.debut || sansFin(medicament)) return null;
   const duree = Number(medicament.dureeJours);
   if (!Number.isFinite(duree) || duree < 1) return null;
   return ajouterJours(medicament.debut, duree - 1);
@@ -53,6 +65,8 @@ export function joursRestants(finISO, aujourdHui = aujourdHuiISO()) {
 
 /** État d'un médicament : "attente" (pas démarré), "en-cours" ou "termine". */
 export function etatMedicament(medicament, aujourdHui = aujourdHuiISO()) {
+  if (!medicament || !medicament.debut) return "attente";
+  if (sansFin(medicament)) return "en-cours";
   const fin = finMedicament(medicament);
   if (!fin) return "attente";
   return joursRestants(fin, aujourdHui) > 0 ? "en-cours" : "termine";
@@ -135,6 +149,7 @@ export function normaliserDonnees(brut) {
               nom: texteSur(medicament.nom, 80),
               posologie: texteSur(medicament.posologie, 120),
               dureeJours: borneDuree(medicament.dureeJours),
+              sansFin: medicament.sansFin === true,
               debut
             };
           })
@@ -485,10 +500,12 @@ export function libelleMoment(moment) {
   return trouve ? trouve.libelle : "Sans horaire";
 }
 
-/** Vrai si le médicament est à prendre ce jour-là (début et fin connus). */
+/** Vrai si le médicament est à prendre ce jour-là : de son début à sa fin, ou sans limite. */
 export function actifLe(medicament, jour) {
+  if (!medicament || !medicament.debut) return false;
+  if (sansFin(medicament)) return jour >= medicament.debut;
   const fin = finMedicament(medicament);
-  if (!medicament || !medicament.debut || !fin) return false;
+  if (!fin) return false;
   return jour >= medicament.debut && jour <= fin;
 }
 

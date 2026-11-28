@@ -529,6 +529,7 @@ svg.carte__chevron {
   line-height: 1.3;
 }
 .medicament--fini .compte__nombre { color: var(--texte-muet); }
+.medicament__compte--libre .compte__nombre { font-family: inherit; font-size: var(--tlg); }
 
 /* Plaquette des jours : une case par jour (une par quatorzième au-delà de deux
    semaines), les jours passés pleins, celui d'aujourd'hui teinté, les autres au
@@ -882,6 +883,11 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* Traitement à vie : une case sur sa propre ligne, pleine largeur, et le champ
+   Durée disparaît puisque le début seul reste à saisir. */
+.moment--bloc { display: grid; }
+.moment--bloc .moment__libelle { justify-content: flex-start; min-height: 44px; }
+.champ-duo--seul { grid-template-columns: 1fr; }
 .champ__aide:empty { display: none; }
 
 .champ__saisie--zone {
@@ -1047,6 +1053,25 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   color: var(--texte-doux);
 }
 .ligne-analyse__duree input { width: 5rem; }
+.ligne-analyse__duree[hidden] { display: none; }
+
+.ligne-analyse__a-vie {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 34px;
+  font-size: var(--tsm);
+  color: var(--texte-doux);
+  cursor: pointer;
+}
+.ligne-analyse__a-vie input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  margin: 0;
+  flex: none;
+}
+.ligne-analyse__a-vie:has(input:checked) { color: var(--texte); }
 
 .ligne-analyse__pied .bouton--petit {
   margin-left: auto;
@@ -1553,4 +1578,8 @@ svg.vide__icone { display: block; margin: 0 auto var(--e4); color: var(--texte-m
   .jour__barre > bouton-action > .bouton { padding: var(--e2); min-width: 44px; min-height: 44px; }
   .jour__date { font-size: var(--tbase); }
   .pied__actions { flex-direction: column; gap: var(--e2); }
+  /* Ligne d'analyse : « à vie » et Retirer sur la ligne, la durée en dessous. */
+  .ligne-analyse__a-vie { order: 1; }
+  .ligne-analyse__pied .bouton--petit { order: 2; }
+  .ligne-analyse__duree { order: 3; flex: 1 0 100%; }
 }
